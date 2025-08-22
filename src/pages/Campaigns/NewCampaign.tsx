@@ -15,7 +15,7 @@ interface ContactList {
   contatos: Contact[];
 }
 
-const API_URL = "https://atende-ai-z2n7.onrender.com/api";
+const API_URL = "https://back-atende-ai.vercel.app/";
 
 const NewCampaign = () => {
   const { user } = useAuth();
