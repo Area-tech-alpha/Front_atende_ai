@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
 interface User {
@@ -17,15 +17,7 @@ interface AuthContextType {
   logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -37,10 +29,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   async function checkUser() {
     try {
-      const { data, error } = await supabase
-        .from('login_evolution')
-        .select('*')
-        .single();
+      const { data, error } = await supabase.from('login_evolution').select('*').single();
 
       if (error) {
         console.error('Error checking user:', error);
@@ -139,7 +128,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     loading,
     login,
     signup,
-    logout,
+    logout
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

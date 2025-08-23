@@ -8,11 +8,11 @@ export default defineConfig({
   plugins: [react(), tsconfigPaths()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src'),
-    },
+      '@': path.resolve(__dirname, 'src')
+    }
   },
   build: {
     outDir: 'dist',
-    assetsDir: 'assets',
-  },
+    assetsDir: 'assets'
+  }
 });
