@@ -194,7 +194,7 @@ const NewCampaign = () => {
             data_de_envio: isImmediate ? new Date().toISOString() : scheduledDateTime,
             contatos: contatosId,
             delay: messageDelay,
-            status: draft ? 'Draft' : isImmediate ? null : 'Scheduled',
+            status: draft ? 'Draft' : isImmediate ? 'Scheduled' : 'Scheduled',
             device_id: selectedDevice,
             nome_da_instancia: null,
             apikey_da_instancia: null
