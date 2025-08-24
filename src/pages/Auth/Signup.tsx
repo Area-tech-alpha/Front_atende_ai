@@ -1,6 +1,6 @@
+import { useAuth } from '@/hooks/useAuth';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
 
 const Signup = () => {
   const [name, setName] = useState('');
@@ -15,11 +15,11 @@ const Signup = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     if (password !== confirmPassword) {
       return setError('Passwords do not match');
     }
-    
+
     setIsLoading(true);
 
     try {
@@ -42,7 +42,9 @@ const Signup = () => {
               alt="Logomarca Alpha"
               className="mx-auto mb-6 w-24 h-24 object-contain"
             />
-            <h1 className="text-3xl font-bold text-yellow-400 drop-shadow-[0_2px_8px_rgba(255,200,0,0.7)] mb-2">Criar conta</h1>
+            <h1 className="text-3xl font-bold text-yellow-400 drop-shadow-[0_2px_8px_rgba(255,200,0,0.7)] mb-2">
+              Criar conta
+            </h1>
             <p className="text-zinc-300">Preencha os dados para acessar o sistema</p>
           </div>
 
@@ -62,7 +64,7 @@ const Signup = () => {
                 type="text"
                 required
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={e => setName(e.target.value)}
                 className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-colors outline-none"
                 placeholder="Seu nome"
               />
@@ -77,7 +79,7 @@ const Signup = () => {
                 type="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
                 className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-colors outline-none"
                 placeholder="seu@email.com"
               />
@@ -92,7 +94,7 @@ const Signup = () => {
                 type="password"
                 required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={e => setPassword(e.target.value)}
                 className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-colors outline-none"
                 placeholder="••••••••"
               />
@@ -107,7 +109,7 @@ const Signup = () => {
                 type="password"
                 required
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={e => setConfirmPassword(e.target.value)}
                 className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-colors outline-none"
                 placeholder="••••••••"
               />
@@ -121,20 +123,41 @@ const Signup = () => {
                 className="h-4 w-4 text-yellow-400 border-zinc-700 rounded focus:ring-yellow-400"
               />
               <label htmlFor="terms" className="ml-2 block text-sm text-zinc-400">
-                Concordo com os <a href="#" className="text-yellow-400 hover:underline">Termos de Serviço</a> e <a href="#" className="text-yellow-400 hover:underline">Política de Privacidade</a>
+                Concordo com os{' '}
+                <a href="#" className="text-yellow-400 hover:underline">
+                  Termos de Serviço
+                </a>{' '}
+                e{' '}
+                <a href="#" className="text-yellow-400 hover:underline">
+                  Política de Privacidade
+                </a>
               </label>
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className={`w-full flex justify-center items-center px-4 py-3 bg-yellow-400 text-zinc-900 font-bold rounded-lg hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-300 focus:ring-offset-2 transition-colors shadow-md ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
-            >
+              className={`w-full flex justify-center items-center px-4 py-3 bg-yellow-400 text-zinc-900 font-bold rounded-lg hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-300 focus:ring-offset-2 transition-colors shadow-md ${
+                isLoading ? 'opacity-70 cursor-not-allowed' : ''
+              }`}>
               {isLoading ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-zinc-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-zinc-900"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24">
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                   Criando conta...
                 </>

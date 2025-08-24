@@ -1,19 +1,12 @@
-import React, { useState, useEffect } from "react";
-import {
-  ArrowUpRight,
-  MessageCircle,
-  Users,
-  Clock,
-  RefreshCw,
-  Loader2,
-} from "lucide-react";
-import { useAuth } from "../../contexts/AuthContext";
-import { supabase } from "../../lib/supabase";
-import StatCard from "./components/StatCard";
-import CampaignTable from "./components/CampaignTable";
-import OverviewChart from "./components/OverviewChart";
+import React, { useState, useEffect } from 'react';
+import { ArrowUpRight, MessageCircle, Users, Clock, RefreshCw, Loader2 } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import StatCard from './components/StatCard';
+import CampaignTable from './components/CampaignTable';
+import OverviewChart from './components/OverviewChart';
+import { useAuth } from '@/hooks/useAuth';
 
-type CampaignStatus = "Concluída" | "Agendada" | "Em Andamento" | "Rascunho";
+type CampaignStatus = 'Concluída' | 'Agendada' | 'Em Andamento' | 'Rascunho';
 
 interface DashboardStats {
   totalMessages: number;
@@ -46,7 +39,7 @@ const Dashboard = () => {
     messageChange: 0,
     contactChange: 0,
     deliveryChange: 0,
-    responseChange: 0,
+    responseChange: 0
   });
   const [recentCampaigns, setRecentCampaigns] = useState<Campaign[]>([]);
   const [selectedCampaign, setSelectedCampaign] = useState<number | null>(null);
@@ -58,75 +51,62 @@ const Dashboard = () => {
       if (!user) return;
 
       const { data: contactsData, error: contactsError } = await supabase
-        .from("contato_evolution")
-        .select("id")
-        .eq("relacao_login", user.id);
+        .from('contato_evolution')
+        .select('id')
+        .eq('relacao_login', user.id);
 
       if (contactsError) throw contactsError;
 
-      const contactIds = contactsData?.map((contact) => contact.id) || [];
+      const contactIds = contactsData?.map(contact => contact.id) || [];
 
       let messagesQuery = supabase
-        .from("mensagem_evolution")
-        .select("*")
-        .in("contatos", contactIds)
-        .order("created_at", { ascending: false });
+        .from('mensagem_evolution')
+        .select('*')
+        .in('contatos', contactIds)
+        .order('created_at', { ascending: false });
 
       if (campaignId) {
-        messagesQuery = messagesQuery.eq("id", campaignId);
+        messagesQuery = messagesQuery.eq('id', campaignId);
       }
 
       const { data: messagesData, error: messagesError } = await messagesQuery;
 
       if (messagesError) throw messagesError;
 
-      const messageIds = messagesData?.map((msg) => msg.id) || [];
+      const messageIds = messagesData?.map(msg => msg.id) || [];
       const { data: enviosData, error: enviosError } = await supabase
-        .from("envio_evolution")
-        .select("*")
-        .in("id_mensagem", messageIds);
+        .from('envio_evolution')
+        .select('*')
+        .in('id_mensagem', messageIds);
 
       if (enviosError) throw enviosError;
 
       const totalMessages = enviosData?.length || 0;
       let totalContacts = 0;
       if (contactsData) {
-        const { data: allContactsData, error: allContactsError } =
-          await supabase
-            .from("contato_evolution")
-            .select("contatos")
-            .in("id", contactIds);
+        const { data: allContactsData, error: allContactsError } = await supabase
+          .from('contato_evolution')
+          .select('contatos')
+          .in('id', contactIds);
         if (!allContactsError) {
-          totalContacts = allContactsData.reduce(
-            (acc, list) => acc + JSON.parse(list.contatos || "[]").length,
-            0
-          );
+          totalContacts = allContactsData.reduce((acc, list) => acc + JSON.parse(list.contatos || '[]').length, 0);
         }
       }
 
-      const deliveredMessages =
-        enviosData?.filter((e) => e.status === "success" || e.status === "read")
-          .length || 0;
-      const deliveryRate =
-        totalMessages > 0 ? (deliveredMessages / totalMessages) * 100 : 0;
+      const deliveredMessages = enviosData?.filter(e => e.status === 'success' || e.status === 'read').length || 0;
+      const deliveryRate = totalMessages > 0 ? (deliveredMessages / totalMessages) * 100 : 0;
 
       const now = new Date();
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-      const recentMessages =
-        enviosData?.filter((e) => new Date(e.created_at) > thirtyDaysAgo)
-          .length || 0;
+      const recentMessages = enviosData?.filter(e => new Date(e.created_at) > thirtyDaysAgo).length || 0;
       const oldMessages = totalMessages - recentMessages;
-      const messageChange =
-        oldMessages > 0
-          ? ((recentMessages - oldMessages) / oldMessages) * 100
-          : 0;
+      const messageChange = oldMessages > 0 ? ((recentMessages - oldMessages) / oldMessages) * 100 : 0;
 
       let avgResponseTime = 0;
       if (enviosData && enviosData.length > 1) {
         const sortedEnvios = [...enviosData].sort(
-          (a, b) =>
-            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
         );
         let totalDiff = 0;
         for (let i = 1; i < sortedEnvios.length; i++) {
@@ -146,20 +126,14 @@ const Dashboard = () => {
         messageChange,
         contactChange: 0,
         deliveryChange: 0,
-        responseChange: 0,
+        responseChange: 0
       });
 
       const formattedCampaigns: Campaign[] =
-        messagesData?.map((message) => {
-          const messageEnvios =
-            enviosData?.filter((e) => e.id_mensagem === message.id) || [];
-          const delivered = messageEnvios.filter(
-            (e) => e.status === "success" || e.status === "read"
-          ).length;
-          const deliveryRate =
-            messageEnvios.length > 0
-              ? (delivered / messageEnvios.length) * 100
-              : 0;
+        messagesData?.map(message => {
+          const messageEnvios = enviosData?.filter(e => e.id_mensagem === message.id) || [];
+          const delivered = messageEnvios.filter(e => e.status === 'success' || e.status === 'read').length;
+          const deliveryRate = messageEnvios.length > 0 ? (delivered / messageEnvios.length) * 100 : 0;
 
           return {
             id: message.id,
@@ -169,13 +143,13 @@ const Dashboard = () => {
             delivered,
             deliveryRate,
             date: message.scheduled_date || message.created_at,
-            nome_da_instancia: message.nome_da_instancia,
+            nome_da_instancia: message.nome_da_instancia
           };
         }) || [];
 
       setRecentCampaigns(formattedCampaigns);
     } catch (error) {
-      console.error("Error fetching dashboard data:", error);
+      console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
     }
@@ -193,45 +167,37 @@ const Dashboard = () => {
   // AQUI COMEÇAM AS MUDANÇAS DE ESTILO
   const statCards = [
     {
-      title: "Mensagens Enviadas",
+      title: 'Mensagens Enviadas',
       value: stats.totalMessages.toLocaleString(),
-      change: `${
-        stats.messageChange >= 0 ? "+" : ""
-      }${stats.messageChange.toFixed(1)}%`,
+      change: `${stats.messageChange >= 0 ? '+' : ''}${stats.messageChange.toFixed(1)}%`,
       isIncrease: stats.messageChange >= 0,
       icon: <MessageCircle className="text-primary" size={20} />, // Usa a cor primária
-      iconBg: "bg-primary/10", // Usa a cor primária com 10% de opacidade
+      iconBg: 'bg-primary/10' // Usa a cor primária com 10% de opacidade
     },
     {
-      title: "Contatos Totais",
+      title: 'Contatos Totais',
       value: stats.totalContacts.toLocaleString(),
-      change: `${
-        stats.contactChange >= 0 ? "+" : ""
-      }${stats.contactChange.toFixed(1)}%`,
+      change: `${stats.contactChange >= 0 ? '+' : ''}${stats.contactChange.toFixed(1)}%`,
       isIncrease: stats.contactChange >= 0,
       icon: <Users className="text-primary" size={20} />,
-      iconBg: "bg-primary/10",
+      iconBg: 'bg-primary/10'
     },
     {
-      title: "Taxa de Entrega",
+      title: 'Taxa de Entrega',
       value: `${stats.deliveryRate.toFixed(1)}%`,
-      change: `${
-        stats.deliveryChange >= 0 ? "+" : ""
-      }${stats.deliveryChange.toFixed(1)}%`,
+      change: `${stats.deliveryChange >= 0 ? '+' : ''}${stats.deliveryChange.toFixed(1)}%`,
       isIncrease: stats.deliveryChange >= 0,
       icon: <ArrowUpRight className="text-primary" size={20} />,
-      iconBg: "bg-primary/10",
+      iconBg: 'bg-primary/10'
     },
     {
-      title: "Intervalo Médio",
+      title: 'Intervalo Médio',
       value: `${stats.avgResponseTime.toFixed(1)} min`,
-      change: `${
-        stats.responseChange >= 0 ? "+" : ""
-      }${stats.responseChange.toFixed(1)}%`,
+      change: `${stats.responseChange >= 0 ? '+' : ''}${stats.responseChange.toFixed(1)}%`,
       isIncrease: stats.responseChange < 0,
       icon: <Clock className="text-primary" size={20} />,
-      iconBg: "bg-primary/10",
-    },
+      iconBg: 'bg-primary/10'
+    }
   ];
 
   if (loading) {
@@ -248,13 +214,12 @@ const Dashboard = () => {
         <h1 className="text-2xl font-bold text-accent">Painel de Controle</h1>
         <div className="flex items-center space-x-4">
           <select
-            value={selectedCampaign || ""}
+            value={selectedCampaign || ''}
             onChange={handleCampaignChange}
             // Classes atualizadas para o seletor
-            className="input w-full md:w-auto"
-          >
+            className="input w-full md:w-auto">
             <option value="">Todas as Campanhas</option>
-            {recentCampaigns.map((campaign) => (
+            {recentCampaigns.map(campaign => (
               <option key={campaign.id} value={campaign.id}>
                 {campaign.name}
               </option>
@@ -262,8 +227,7 @@ const Dashboard = () => {
           </select>
           <button
             onClick={() => fetchDashboardData(selectedCampaign || undefined)}
-         className="btn-secondary flex items-center space-x-2"
-          >
+            className="btn-secondary flex items-center space-x-2">
             <RefreshCw size={16} />
             <span>Atualizar</span>
           </button>
@@ -279,55 +243,41 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Classes atualizadas para o card do gráfico */}
         <div className="lg:col-span-2 card">
-          <h2 className="text-xl font-bold text-accent mb-6">
-            Atividade de Mensagens
-          </h2>
+          <h2 className="text-xl font-bold text-accent mb-6">Atividade de Mensagens</h2>
           <OverviewChart campaignId={selectedCampaign} />
         </div>
         {/* Classes atualizadas para o card de status */}
         <div className="card p-6 rounded-lg border border-border">
-          <h2 className="text-xl font-bold text-accent mb-6">
-            Status das Campanhas
-          </h2>
+          <h2 className="text-xl font-bold text-accent mb-6">Status das Campanhas</h2>
           <div className="space-y-5">
-            {["Concluída", "Em Andamento", "Agendada", "Rascunho"].map(
-              (status) => {
-                const count = recentCampaigns.filter(
-                  (c) => c.status === status
-                ).length;
-                const percentage =
-                  recentCampaigns.length > 0
-                    ? (count / recentCampaigns.length) * 100
-                    : 0;
+            {['Concluída', 'Em Andamento', 'Agendada', 'Rascunho'].map(status => {
+              const count = recentCampaigns.filter(c => c.status === status).length;
+              const percentage = recentCampaigns.length > 0 ? (count / recentCampaigns.length) * 100 : 0;
 
-                return (
-                  <div key={status}>
-                    {/* Texto secundário para status e contagem */}
-                    <div className="flex justify-between text-sm mb-1 text-text-secondary">
-                      <span>{status}</span>
-                      <span>{count}</span>
-                    </div>
-                    {/* Fundo da barra de progresso */}
-                    <div className="w-full bg-secondary-darker rounded-full h-2">
-                      {/* Barra de progresso com a cor primária */}
-                      <div
-                        className="bg-primary h-2 rounded-full transition-all duration-500"
-                        style={{ width: `${percentage}%` }}
-                      ></div>
-                    </div>
+              return (
+                <div key={status}>
+                  {/* Texto secundário para status e contagem */}
+                  <div className="flex justify-between text-sm mb-1 text-text-secondary">
+                    <span>{status}</span>
+                    <span>{count}</span>
                   </div>
-                );
-              }
-            )}
+                  {/* Fundo da barra de progresso */}
+                  <div className="w-full bg-secondary-darker rounded-full h-2">
+                    {/* Barra de progresso com a cor primária */}
+                    <div
+                      className="bg-primary h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${percentage}%` }}></div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
 
       {/* Classes atualizadas para a tabela de campanhas */}
       <div className="card p-6 rounded-lg border border-border">
-        <h2 className="text-xl font-bold text-accent mb-6">
-          Campanhas Recentes
-        </h2>
+        <h2 className="text-xl font-bold text-accent mb-6">Campanhas Recentes</h2>
         <CampaignTable campaigns={recentCampaigns} />
       </div>
     </div>

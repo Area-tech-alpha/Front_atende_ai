@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { MoreVertical, Wifi, WifiOff, Loader2, Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 
@@ -53,7 +53,11 @@ const WhatsAppConnections: React.FC = () => {
         return { color: 'text-green-500', text: 'Conectado', icon: <Wifi size={16} /> };
       case 'connecting':
       case 'pending':
-        return { color: 'text-yellow-500', text: 'Conectando...', icon: <Loader2 size={16} className="animate-spin" /> };
+        return {
+          color: 'text-yellow-500',
+          text: 'Conectando...',
+          icon: <Loader2 size={16} className="animate-spin" />
+        };
       default:
         return { color: 'text-red-500', text: 'Desconectado', icon: <WifiOff size={16} /> };
     }
@@ -61,15 +65,15 @@ const WhatsAppConnections: React.FC = () => {
 
   const handleDeleteConnection = async (deviceId: string) => {
     if (!window.confirm('Tem certeza? Isso removerá os dados de autenticação e desconectará o aparelho.')) return;
-    
+
     try {
       // URL completa para a rota de exclusão de autenticação
-      const response = await fetch(`${API_URL}/api/whatsapp/devices/${deviceId}/auth`, { 
-        method: 'DELETE' 
+      const response = await fetch(`${API_URL}/api/whatsapp/devices/${deviceId}/auth`, {
+        method: 'DELETE'
       });
       if (!response.ok) throw new Error('Erro ao excluir conexão');
-      
-      toast.success("Conexão excluída com sucesso!");
+
+      toast.success('Conexão excluída com sucesso!');
       fetchConnections(); // Atualiza a lista
     } catch (err) {
       toast.error('Não foi possível excluir a conexão.');
@@ -95,15 +99,16 @@ const WhatsAppConnections: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-3">
-            {connections.map((connection) => {
+            {connections.map(connection => {
               const statusInfo = getStatusInfo(connection.status);
               return (
                 <div
                   key={connection.deviceId}
-                  className="bg-secondary-dark rounded-lg p-4 flex items-center justify-between"
-                >
+                  className="bg-secondary-dark rounded-lg p-4 flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium text-accent text-lg">{connection.connection_name || 'Conexão Sem Nome'}</h3>
+                    <h3 className="font-medium text-accent text-lg">
+                      {connection.connection_name || 'Conexão Sem Nome'}
+                    </h3>
                     <p className="text-accent/60 text-sm">{connection.deviceId}</p>
                   </div>
                   <div className="flex items-center gap-4 relative">
@@ -113,16 +118,14 @@ const WhatsAppConnections: React.FC = () => {
                     </span>
                     <button
                       className="p-1 rounded-full text-accent/70 hover:bg-secondary-darker"
-                      onClick={() => setOpenMenuId(openMenuId === connection.deviceId ? null : connection.deviceId)}
-                    >
+                      onClick={() => setOpenMenuId(openMenuId === connection.deviceId ? null : connection.deviceId)}>
                       <MoreVertical size={20} />
                     </button>
                     {openMenuId === connection.deviceId && (
                       <div className="absolute right-0 top-10 bg-white border border-gray-200 rounded-md shadow-lg z-10 w-40">
                         <button
                           className="flex items-center gap-3 w-full text-left px-4 py-2 text-red-600 hover:bg-red-50"
-                          onClick={() => handleDeleteConnection(connection.deviceId)}
-                        >
+                          onClick={() => handleDeleteConnection(connection.deviceId)}>
                           <Trash2 size={16} />
                           <span>Excluir</span>
                         </button>

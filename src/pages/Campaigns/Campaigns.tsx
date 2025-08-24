@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Search, Filter, ChevronDown, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import CampaignCard from './components/CampaignCard';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Campaign {
   id: number;
@@ -71,7 +71,7 @@ const Campaigns = () => {
               sent: enviosCampanha.length,
               delivered: enviosCampanha.filter(e => e.status === 'success').length,
               read: enviosCampanha.filter(e => e.status === 'read').length,
-              error: enviosCampanha.filter(e => e.status === 'error').length,
+              error: enviosCampanha.filter(e => e.status === 'error').length
             };
           }
         }
@@ -99,7 +99,7 @@ const Campaigns = () => {
         deliveredCount: envioStats[message.id]?.delivered || 0,
         readCount: envioStats[message.id]?.read || 0,
         errorCount: envioStats[message.id]?.error || 0,
-        nome_da_instancia: message.nome_da_instancia,
+        nome_da_instancia: message.nome_da_instancia
       }));
 
       setCampaigns(formattedCampaigns);
@@ -116,11 +116,11 @@ const Campaigns = () => {
 
   // Filter campaigns based on search query and status filter
   const filteredCampaigns = campaigns.filter(campaign => {
-    const matchesSearch = 
+    const matchesSearch =
       campaign.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       campaign.texto.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'All' || campaign.status === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -138,10 +138,9 @@ const Campaigns = () => {
         <h1 className="text-3xl font-display font-bold bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent">
           Campanhas
         </h1>
-        <button 
+        <button
           onClick={() => navigate('/campaigns/new')}
-          className="btn-primary flex items-center space-x-2 w-full sm:w-auto justify-center"
-        >
+          className="btn-primary flex items-center space-x-2 w-full sm:w-auto justify-center">
           <Plus size={16} />
           <span>Nova Campanha</span>
         </button>
@@ -158,10 +157,10 @@ const Campaigns = () => {
               placeholder="Buscar campanhas..."
               className="input pl-10"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={e => setSearchQuery(e.target.value)}
             />
           </div>
-          
+
           <div className="flex space-x-4">
             <div className="relative">
               <div className="flex items-center border-2 border-secondary-dark rounded-lg bg-secondary">
@@ -172,8 +171,7 @@ const Campaigns = () => {
                 <select
                   className="appearance-none bg-transparent pr-8 py-2 w-40 focus:outline-none text-sm text-accent"
                   value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
+                  onChange={e => setStatusFilter(e.target.value)}>
                   <option value="All">Todos</option>
                   <option value="Draft">Rascunho</option>
                   <option value="Scheduled">Agendada</option>
@@ -192,8 +190,8 @@ const Campaigns = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredCampaigns.length > 0 ? (
           filteredCampaigns.map(campaign => (
-            <CampaignCard 
-              key={campaign.id} 
+            <CampaignCard
+              key={campaign.id}
               campaign={{
                 id: campaign.id,
                 name: campaign.name,
@@ -217,10 +215,7 @@ const Campaigns = () => {
             </div>
             <h3 className="text-lg font-display font-bold text-accent mb-2">Nenhuma campanha encontrada</h3>
             <p className="text-accent/60 mb-6">Tente ajustar sua busca ou critérios de filtro</p>
-            <button 
-              onClick={() => navigate('/campaigns/new')}
-              className="btn-primary"
-            >
+            <button onClick={() => navigate('/campaigns/new')} className="btn-primary">
               Criar Nova Campanha
             </button>
           </div>

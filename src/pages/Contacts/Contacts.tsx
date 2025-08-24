@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Upload, Download, Search, User, Loader2, X } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-toastify';
 
@@ -41,18 +41,15 @@ const ContactsPage: React.FC = () => {
   const fetchContactLists = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('contato_evolution')
-        .select('*')
-        .eq('relacao_login', user?.id);
+      const { data, error } = await supabase.from('contato_evolution').select('*').eq('relacao_login', user?.id);
 
       if (error) throw error;
-      
+
       const formattedLists = data.map(list => ({
         id: list.id,
         name: list.name || `Lista de ${new Date(list.created_at).toLocaleDateString()}`,
         contatos: JSON.parse(list.contatos || '[]'),
-        created_at: list.created_at,
+        created_at: list.created_at
       }));
 
       setContactLists(formattedLists);
@@ -70,7 +67,7 @@ const ContactsPage: React.FC = () => {
 
     setCsvFileName(file.name);
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = e => {
       const text = e.target?.result as string;
       const lines = text.split('\n').slice(1); // Pula o cabeçalho
       const parsedContacts: Contact[] = lines
@@ -83,43 +80,47 @@ const ContactsPage: React.FC = () => {
     };
     reader.readAsText(file);
   };
-  
+
   const handleSaveImportedList = async () => {
     if (!importListName || importContacts.length === 0 || !user) {
-        toast.warn('Nome da lista e contatos são obrigatórios.');
-        return;
+      toast.warn('Nome da lista e contatos são obrigatórios.');
+      return;
     }
     setIsSubmitting(true);
     try {
-        await supabase.from('contato_evolution').insert([{
-            contatos: JSON.stringify(importContacts),
-            relacao_login: user.id,
-            name: importListName
-        }]);
-        toast.success(`Lista "${importListName}" importada com sucesso!`);
-        closeModal();
-        fetchContactLists();
+      await supabase.from('contato_evolution').insert([
+        {
+          contatos: JSON.stringify(importContacts),
+          relacao_login: user.id,
+          name: importListName
+        }
+      ]);
+      toast.success(`Lista "${importListName}" importada com sucesso!`);
+      closeModal();
+      fetchContactLists();
     } catch (err) {
-        toast.error('Erro ao importar lista.');
+      toast.error('Erro ao importar lista.');
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
   const handleAddContact = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newContact.name || !newContact.phone || !user) {
-        toast.warn('Nome e telefone são obrigatórios.');
-        return;
+      toast.warn('Nome e telefone são obrigatórios.');
+      return;
     }
     setIsSubmitting(true);
     try {
-      await supabase.from('contato_evolution').insert([{
-        contatos: JSON.stringify([newContact]),
-        relacao_login: user.id,
-        name: `Contato: ${newContact.name}`
-      }]);
-      toast.success("Contato adicionado com sucesso!");
+      await supabase.from('contato_evolution').insert([
+        {
+          contatos: JSON.stringify([newContact]),
+          relacao_login: user.id,
+          name: `Contato: ${newContact.name}`
+        }
+      ]);
+      toast.success('Contato adicionado com sucesso!');
       closeModal();
       fetchContactLists();
     } catch (err) {
@@ -133,10 +134,10 @@ const ContactsPage: React.FC = () => {
     if (window.confirm('Tem certeza que deseja excluir esta lista?')) {
       try {
         await supabase.from('contato_evolution').delete().eq('id', listId);
-        toast.success("Lista excluída!");
+        toast.success('Lista excluída!');
         setContactLists(prev => prev.filter(l => l.id !== listId));
       } catch (error) {
-        toast.error("Erro ao excluir lista.");
+        toast.error('Erro ao excluir lista.');
       }
     }
   };
@@ -145,31 +146,31 @@ const ContactsPage: React.FC = () => {
     if (!exportListId) return;
     const listToExport = contactLists.find(l => l.id === exportListId);
     if (!listToExport) {
-        toast.error("Lista não encontrada.");
-        return;
+      toast.error('Lista não encontrada.');
+      return;
     }
 
-    const csvHeader = "name,phone\n";
-    const csvRows = listToExport.contatos.map(c => `${c.name},${c.phone}`).join("\n");
+    const csvHeader = 'name,phone\n';
+    const csvRows = listToExport.contatos.map(c => `${c.name},${c.phone}`).join('\n');
     const csvContent = csvHeader + csvRows;
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `${listToExport.name.replace(/\s+/g, '_')}.csv`);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${listToExport.name.replace(/\s+/g, '_')}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     closeModal();
   };
 
-  const filteredLists = contactLists.filter(list => 
-    list.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    list.contatos.some(contact => 
-        contact.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        contact.phone.includes(searchQuery)
-    )
+  const filteredLists = contactLists.filter(
+    list =>
+      list.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      list.contatos.some(
+        contact => contact.name.toLowerCase().includes(searchQuery.toLowerCase()) || contact.phone.includes(searchQuery)
+      )
   );
 
   const openModal = (type: 'add' | 'import' | 'export') => {
@@ -221,18 +222,20 @@ const ContactsPage: React.FC = () => {
             placeholder="Buscar por nome da lista, nome do contato ou telefone..."
             className="input pl-10"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={e => setSearchQuery(e.target.value)}
           />
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredLists.map((list) => (
+        {filteredLists.map(list => (
           <div key={list.id} className="card flex flex-col justify-between">
             <div>
               <div className="flex justify-between items-start mb-4">
                 <h3 className="font-bold text-accent  pr-2">{list.name}</h3>
-                <button onClick={() => handleDeleteList(list.id)} className="text-accent/60 hover:text-red-500 transition-colors">
+                <button
+                  onClick={() => handleDeleteList(list.id)}
+                  className="text-accent/60 hover:text-red-500 transition-colors">
                   <X size={16} />
                 </button>
               </div>
@@ -264,20 +267,34 @@ const ContactsPage: React.FC = () => {
             <button onClick={closeModal} className="absolute top-4 right-4 text-accent/60 hover:text-primary">
               <X size={24} />
             </button>
-            
+
             {modalType === 'add' && (
               <form onSubmit={handleAddContact} className="space-y-6">
                 <h2 className="text-xl font-bold text-accent">Novo Contato</h2>
                 <div>
                   <label className="block text-sm font-medium text-accent/60 mb-1">Nome</label>
-                  <input type="text" className="input" value={newContact.name} onChange={(e) => setNewContact({...newContact, name: e.target.value})} required />
+                  <input
+                    type="text"
+                    className="input"
+                    value={newContact.name}
+                    onChange={e => setNewContact({ ...newContact, name: e.target.value })}
+                    required
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-accent/60 mb-1">Telefone</label>
-                  <input type="tel" className="input" value={newContact.phone} onChange={(e) => setNewContact({...newContact, phone: e.target.value})} required />
+                  <input
+                    type="tel"
+                    className="input"
+                    value={newContact.phone}
+                    onChange={e => setNewContact({ ...newContact, phone: e.target.value })}
+                    required
+                  />
                 </div>
                 <div className="flex justify-end gap-3">
-                  <button type="button" onClick={closeModal} className="btn-secondary">Cancelar</button>
+                  <button type="button" onClick={closeModal} className="btn-secondary">
+                    Cancelar
+                  </button>
                   <button type="submit" disabled={isSubmitting} className="btn-primary">
                     {isSubmitting ? <Loader2 className="animate-spin" /> : 'Adicionar'}
                   </button>
@@ -290,21 +307,34 @@ const ContactsPage: React.FC = () => {
                 <h2 className="text-xl font-bold text-accent">Importar Lista de Contatos</h2>
                 <div>
                   <label className="block text-sm font-medium text-accent/60 mb-1">Nome da Nova Lista</label>
-                  <input type="text" className="input" value={importListName} onChange={(e) => setImportListName(e.target.value)} placeholder="Ex: Clientes VIP" />
+                  <input
+                    type="text"
+                    className="input"
+                    value={importListName}
+                    onChange={e => setImportListName(e.target.value)}
+                    placeholder="Ex: Clientes VIP"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-accent/60mb-1">Arquivo CSV</label>
                   <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-                    <input type="file" accept=".csv" onChange={handleCSVUpload} ref={fileInputRef} className="hidden"/>
-                    <Upload className="h-10 w-10 text-accent/60 mx-auto mb-2"/>
+                    <input type="file" accept=".csv" onChange={handleCSVUpload} ref={fileInputRef} className="hidden" />
+                    <Upload className="h-10 w-10 text-accent/60 mx-auto mb-2" />
                     <p className="text-sm text-accent/60">
-                      <button type="button" onClick={() => fileInputRef.current?.click()} className="font-semibold text-primary hover:underline">Clique para enviar</button>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="font-semibold text-primary hover:underline">
+                        Clique para enviar
+                      </button>
                     </p>
                     {csvFileName && <p className="text-xs text-green-500 mt-2">Arquivo: {csvFileName}</p>}
                   </div>
                 </div>
                 <div className="flex justify-end gap-3">
-                  <button onClick={closeModal} className="btn-secondary">Cancelar</button>
+                  <button onClick={closeModal} className="btn-secondary">
+                    Cancelar
+                  </button>
                   <button onClick={handleSaveImportedList} disabled={isSubmitting} className="btn-primary">
                     {isSubmitting ? <Loader2 className="animate-spin" /> : 'Importar Lista'}
                   </button>
@@ -316,20 +346,27 @@ const ContactsPage: React.FC = () => {
               <div className="space-y-6">
                 <h2 className="text-xl font-bold text-accent">Exportar Lista de Contatos</h2>
                 <div>
-                  <label className="block text-sm font-medium text-accent/60 mb-1">Selecione a Lista para Exportar</label>
+                  <label className="block text-sm font-medium text-accent/60 mb-1">
+                    Selecione a Lista para Exportar
+                  </label>
                   <select
                     className="input"
                     value={exportListId || ''}
-                    onChange={(e) => setExportListId(Number(e.target.value))}
-                  >
-                    <option value="" disabled>-- Escolha uma lista --</option>
+                    onChange={e => setExportListId(Number(e.target.value))}>
+                    <option value="" disabled>
+                      -- Escolha uma lista --
+                    </option>
                     {contactLists.map(list => (
-                      <option key={list.id} value={list.id}>{list.name}</option>
+                      <option key={list.id} value={list.id}>
+                        {list.name}
+                      </option>
                     ))}
                   </select>
                 </div>
                 <div className="flex justify-end gap-3">
-                  <button onClick={closeModal} className="btn-secondary">Cancelar</button>
+                  <button onClick={closeModal} className="btn-secondary">
+                    Cancelar
+                  </button>
                   <button onClick={handleExportList} disabled={!exportListId} className="btn-primary">
                     Exportar
                   </button>

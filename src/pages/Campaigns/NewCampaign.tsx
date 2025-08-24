@@ -1,8 +1,9 @@
-import React, { useState, useRef, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { X, Loader2, ArrowLeft } from "lucide-react";
-import { useAuth } from "../../contexts/AuthContext";
-import { supabase } from "../../lib/supabase";
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { X, Loader2, ArrowLeft } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '../../lib/supabase';
+import { API_URL } from '@/config/api';
 
 interface Contact {
   name: string;
@@ -15,34 +16,28 @@ interface ContactList {
   contatos: Contact[];
 }
 
-const API_URL = "https://back-atende-ai.vercel.app/";
-
 const NewCampaign = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  const [campaignName, setCampaignName] = useState("");
+  const [campaignName, setCampaignName] = useState('');
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState('');
   const [isImmediate, setIsImmediate] = useState(true);
-  const [scheduledDate, setScheduledDate] = useState("");
-  const [scheduledTime, setScheduledTime] = useState("");
+  const [scheduledDate, setScheduledDate] = useState('');
+  const [scheduledTime, setScheduledTime] = useState('');
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>("");
+  const [imagePreview, setImagePreview] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [messageDelay, setMessageDelay] = useState(0); // Delay in seconds
   const [contactLists, setContactLists] = useState<ContactList[]>([]);
-  const [selectedContactListId, setSelectedContactListId] = useState<
-    number | null
-  >(null);
+  const [selectedContactListId, setSelectedContactListId] = useState<number | null>(null);
   const [isDraft, setIsDraft] = useState(false);
-  const [devices, setDevices] = useState<
-    { deviceId: string; connection_name?: string }[]
-  >([]);
-  const [selectedDevice, setSelectedDevice] = useState<string>("default");
+  const [devices, setDevices] = useState<{ deviceId: string; connection_name?: string }[]>([]);
+  const [selectedDevice, setSelectedDevice] = useState<string>('default');
 
   // Função para salvar rascunho corretamente
   const formRef = useRef<HTMLFormElement>(null);
@@ -53,7 +48,7 @@ const NewCampaign = () => {
       handleSubmit(
         {
           ...e,
-          preventDefault: () => {},
+          preventDefault: () => {}
         } as any,
         true
       );
@@ -63,15 +58,12 @@ const NewCampaign = () => {
   // Buscar listas de contatos salvas
   useEffect(() => {
     const fetchContactLists = async () => {
-      const { data, error } = await supabase
-        .from("contato_evolution")
-        .select("*")
-        .eq("relacao_login", user?.id);
+      const { data, error } = await supabase.from('contato_evolution').select('*').eq('relacao_login', user?.id);
       if (!error && data) {
         const lists = data.map((list: any) => ({
           id: list.id,
           name: list.name || `Lista #${list.id}`,
-          contatos: JSON.parse(list.contatos || "[]"),
+          contatos: JSON.parse(list.contatos || '[]')
         }));
         setContactLists(lists);
       }
@@ -83,17 +75,17 @@ const NewCampaign = () => {
     // Se vier do botão reutilizar, preencher os campos
     if (location.state && location.state.reuseCampaign) {
       const c = location.state.reuseCampaign;
-      setCampaignName(c.name || "");
-      setMessage(c.texto || "");
+      setCampaignName(c.name || '');
+      setMessage(c.texto || '');
       setSelectedImage(null);
-      setImagePreview(c.imagem || "");
+      setImagePreview(c.imagem || '');
       if (c.delay) setMessageDelay(c.delay);
       // Buscar contatos da lista usada
       if (c.contatos) {
         supabase
-          .from("contato_evolution")
-          .select("contatos")
-          .eq("id", c.contatos)
+          .from('contato_evolution')
+          .select('contatos')
+          .eq('id', c.contatos)
           .single()
           .then(({ data }) => {
             if (data && data.contatos) {
@@ -109,19 +101,19 @@ const NewCampaign = () => {
   useEffect(() => {
     const fetchDevices = async () => {
       try {
-        const response = await fetch(`${API_URL}/whatsapp/devices`);
-        if (!response.ok) throw new Error("Erro ao buscar devices");
+        const response = await fetch(`${API_URL}/api/whatsapp/devices`);
+        if (!response.ok) throw new Error('Erro ao buscar devices');
         const data = await response.json();
 
         // Agora data.devices é um array de objetos { deviceId, connection_name }
         if (Array.isArray(data.devices)) {
           setDevices(data.devices);
         } else {
-          console.error("Formato inesperado:", data);
+          console.error('Formato inesperado:', data);
           setDevices([]);
         }
       } catch (err) {
-        console.error("Erro ao buscar conexões:", err);
+        console.error('Erro ao buscar conexões:', err);
         setDevices([]);
       }
     };
@@ -135,7 +127,7 @@ const NewCampaign = () => {
 
     setSelectedImage(file);
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = e => {
       setImagePreview(e.target?.result as string);
     };
     reader.readAsDataURL(file);
@@ -143,42 +135,36 @@ const NewCampaign = () => {
 
   const removeImage = () => {
     setSelectedImage(null);
-    setImagePreview("");
+    setImagePreview('');
   };
 
   const handleSubmit = async (e: React.FormEvent, draft = false) => {
     e.preventDefault();
     setIsLoading(true);
-    setError("");
+    setError('');
 
     try {
       // Upload image to Supabase Storage if selected
-      let imageUrl = "";
+      let imageUrl = '';
       if (selectedImage) {
         const { data: imageData, error: imageError } = await supabase.storage
-          .from("imagemevolution")
-          .upload(
-            `campaign-images/${Date.now()}-${selectedImage.name}`,
-            selectedImage
-          );
+          .from('imagemevolution')
+          .upload(`campaign-images/${Date.now()}-${selectedImage.name}`, selectedImage);
 
         if (imageError) throw imageError;
-        imageUrl = `${
-          supabase.storage.from("imagemevolution").getPublicUrl(imageData.path)
-            .data.publicUrl
-        }`;
+        imageUrl = `${supabase.storage.from('imagemevolution').getPublicUrl(imageData.path).data.publicUrl}`;
       }
 
       // Salvar contatos apenas se não houver lista selecionada
       let contatosId = selectedContactListId;
       if (!selectedContactListId) {
         const { data: contactsData, error: contactsError } = await supabase
-          .from("contato_evolution")
+          .from('contato_evolution')
           .insert([
             {
               contatos: JSON.stringify(contacts),
-              relacao_login: user?.id,
-            },
+              relacao_login: user?.id
+            }
           ])
           .select()
           .single();
@@ -191,9 +177,7 @@ const NewCampaign = () => {
       if (!isImmediate && scheduledDate && scheduledTime) {
         const localDate = new Date(`${scheduledDate}T${scheduledTime}:00`);
         // Soma 3 horas (em milissegundos)
-        const localDatePlus3 = new Date(
-          localDate.getTime() + 3 * 60 * 60 * 1000
-        );
+        const localDatePlus3 = new Date(localDate.getTime() + 3 * 60 * 60 * 1000);
         scheduledDateTime = new Date(
           localDatePlus3.getTime() - localDatePlus3.getTimezoneOffset() * 60000
         ).toISOString();
@@ -201,45 +185,39 @@ const NewCampaign = () => {
 
       // Salva a campanha no banco normalmente
       const { data: messageData, error: messageError } = await supabase
-        .from("mensagem_evolution")
+        .from('mensagem_evolution')
         .insert([
           {
             name: campaignName,
             texto: message,
             imagem: imageUrl,
-            data_de_envio: isImmediate
-              ? new Date().toISOString()
-              : scheduledDateTime,
+            data_de_envio: isImmediate ? new Date().toISOString() : scheduledDateTime,
             contatos: contatosId,
             delay: messageDelay,
-            status: draft ? "Draft" : isImmediate ? null : "Scheduled",
+            status: draft ? 'Draft' : isImmediate ? null : 'Scheduled',
             device_id: selectedDevice,
             nome_da_instancia: null,
-            apikey_da_instancia: null,
-          },
+            apikey_da_instancia: null
+          }
         ])
         .select()
         .single();
 
       if (messageError) {
-        console.error("Erro ao salvar mensagem:", messageError);
+        console.error('Erro ao salvar mensagem:', messageError);
         throw messageError;
       }
 
-      console.log("Mensagem salva com sucesso:", messageData);
+      console.log('Mensagem salva com sucesso:', messageData);
 
       // Não faça o envio imediato pelo frontend!
       // O CRONJOB do backend irá processar e enviar as mensagens.
 
       // Redireciona ou mostra mensagem de sucesso normalmente
-      navigate("/campaigns");
+      navigate('/campaigns');
     } catch (err) {
-      console.error("Error creating campaign:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to create campaign. Please try again."
-      );
+      console.error('Error creating campaign:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create campaign. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -251,10 +229,7 @@ const NewCampaign = () => {
         <div className="space-y-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <button
-                onClick={() => navigate("/campaigns")}
-                className="btn-secondary"
-              >
+              <button onClick={() => navigate('/campaigns')} className="btn-secondary">
                 <ArrowLeft size={16} className="mr-2" />
                 Voltar
               </button>
@@ -264,42 +239,31 @@ const NewCampaign = () => {
             </div>
           </div>
 
-          <form
-            ref={formRef}
-            onSubmit={(e) => handleSubmit(e, isDraft)}
-            className="space-y-8"
-          >
+          <form ref={formRef} onSubmit={e => handleSubmit(e, isDraft)} className="space-y-8">
             {/* Configurações Básicas */}
             <div className="card">
-              <h2 className="text-xl font-display font-bold text-accent mb-6">
-                Configurações Básicas
-              </h2>
+              <h2 className="text-xl font-display font-bold text-accent mb-6">Configurações Básicas</h2>
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-accent mb-2">
-                    Nome da Campanha
-                  </label>
+                  <label className="block text-sm font-medium text-accent mb-2">Nome da Campanha</label>
                   <input
                     type="text"
                     value={campaignName}
-                    onChange={(e) => setCampaignName(e.target.value)}
+                    onChange={e => setCampaignName(e.target.value)}
                     className="input"
                     placeholder="Digite o nome da campanha"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-accent mb-2">
-                    Conexão WhatsApp
-                  </label>
+                  <label className="block text-sm font-medium text-accent mb-2">Conexão WhatsApp</label>
                   <select
                     value={selectedDevice}
-                    onChange={(e) => setSelectedDevice(e.target.value)}
+                    onChange={e => setSelectedDevice(e.target.value)}
                     className="input"
-                    required
-                  >
+                    required>
                     <option value="">Selecione uma conexão...</option>
-                    {devices.map((device) => (
+                    {devices.map(device => (
                       <option key={device.deviceId} value={device.deviceId}>
                         {device.connection_name || device.deviceId}
                       </option>
@@ -311,17 +275,13 @@ const NewCampaign = () => {
 
             {/* Mensagem */}
             <div className="card">
-              <h2 className="text-xl font-display font-bold text-accent mb-6">
-                Mensagem
-              </h2>
+              <h2 className="text-xl font-display font-bold text-accent mb-6">Mensagem</h2>
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-accent mb-2">
-                    Texto da Mensagem
-                  </label>
+                  <label className="block text-sm font-medium text-accent mb-2">Texto da Mensagem</label>
                   <textarea
                     value={message}
-                    onChange={(e) => setMessage(e.target.value)}
+                    onChange={e => setMessage(e.target.value)}
                     className="input h-32"
                     placeholder="Digite a mensagem que será enviada"
                     required
@@ -329,9 +289,7 @@ const NewCampaign = () => {
                 </div>
                 {/* Upload de Imagem */}
                 <div>
-                  <label className="block text-sm font-medium text-accent mb-2">
-                    Imagem (opcional)
-                  </label>
+                  <label className="block text-sm font-medium text-accent mb-2">Imagem (opcional)</label>
                   <input
                     type="file"
                     accept="image/*"
@@ -341,17 +299,12 @@ const NewCampaign = () => {
                   />
                   {imagePreview && (
                     <div className="mt-2 relative w-fit">
-                      <img
-                        src={imagePreview}
-                        alt="Preview da imagem"
-                        className="max-h-40 rounded border"
-                      />
+                      <img src={imagePreview} alt="Preview da imagem" className="max-h-40 rounded border" />
                       <button
                         type="button"
                         onClick={removeImage}
                         className="absolute top-1 right-1 bg-white bg-opacity-80 rounded-full p-1 shadow hover:bg-red-100"
-                        title="Remover imagem"
-                      >
+                        title="Remover imagem">
                         <X size={16} />
                       </button>
                     </div>
@@ -362,28 +315,21 @@ const NewCampaign = () => {
 
             {/* Contatos */}
             <div className="card">
-              <h2 className="text-xl font-display font-bold text-accent mb-6">
-                Contatos
-              </h2>
+              <h2 className="text-xl font-display font-bold text-accent mb-6">Contatos</h2>
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-accent mb-2">
-                    Lista de Contatos
-                  </label>
+                  <label className="block text-sm font-medium text-accent mb-2">Lista de Contatos</label>
                   <select
-                    value={selectedContactListId || ""}
-                    onChange={(e) => {
-                      const list = contactLists.find(
-                        (l) => l.id === Number(e.target.value)
-                      );
+                    value={selectedContactListId || ''}
+                    onChange={e => {
+                      const list = contactLists.find(l => l.id === Number(e.target.value));
                       setSelectedContactListId(Number(e.target.value));
                       if (list) setContacts(list.contatos);
                     }}
                     className="input"
-                    required
-                  >
+                    required>
                     <option value="">Selecione uma lista de contatos...</option>
-                    {contactLists.map((list) => (
+                    {contactLists.map(list => (
                       <option key={list.id} value={list.id}>
                         {list.name} ({list.contatos.length} contatos)
                       </option>
@@ -392,9 +338,7 @@ const NewCampaign = () => {
                 </div>
                 {contacts.length > 0 && (
                   <div className="bg-primary/5 rounded-xl p-4">
-                    <p className="text-sm text-accent/60 mb-2">
-                      {contacts.length} contatos selecionados
-                    </p>
+                    <p className="text-sm text-accent/60 mb-2">{contacts.length} contatos selecionados</p>
                     <div className="max-h-40 overflow-y-auto space-y-2">
                       {contacts.slice(0, 5).map((contact, index) => (
                         <div key={index} className="text-sm text-accent/80">
@@ -402,9 +346,7 @@ const NewCampaign = () => {
                         </div>
                       ))}
                       {contacts.length > 5 && (
-                        <div className="text-sm text-accent/60">
-                          +{contacts.length - 5} contatos
-                        </div>
+                        <div className="text-sm text-accent/60">+{contacts.length - 5} contatos</div>
                       )}
                     </div>
                   </div>
@@ -414,9 +356,7 @@ const NewCampaign = () => {
 
             {/* Agendamento */}
             <div className="card">
-              <h2 className="text-xl font-display font-bold text-accent mb-6">
-                Agendamento
-              </h2>
+              <h2 className="text-xl font-display font-bold text-accent mb-6">Agendamento</h2>
               <div className="space-y-6">
                 <div className="flex items-center space-x-4">
                   <label className="flex items-center space-x-2">
@@ -442,25 +382,21 @@ const NewCampaign = () => {
                 {!isImmediate && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-accent mb-2">
-                        Data
-                      </label>
+                      <label className="block text-sm font-medium text-accent mb-2">Data</label>
                       <input
                         type="date"
                         value={scheduledDate}
-                        onChange={(e) => setScheduledDate(e.target.value)}
+                        onChange={e => setScheduledDate(e.target.value)}
                         className="input"
                         required={!isImmediate}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-accent mb-2">
-                        Hora
-                      </label>
+                      <label className="block text-sm font-medium text-accent mb-2">Hora</label>
                       <input
                         type="time"
                         value={scheduledTime}
-                        onChange={(e) => setScheduledTime(e.target.value)}
+                        onChange={e => setScheduledTime(e.target.value)}
                         className="input"
                         required={!isImmediate}
                       />
@@ -475,46 +411,34 @@ const NewCampaign = () => {
                   <input
                     type="number"
                     value={messageDelay}
-                    onChange={(e) => setMessageDelay(Number(e.target.value))}
+                    onChange={e => setMessageDelay(Number(e.target.value))}
                     className="input"
                     min="0"
                     placeholder="0"
                   />
-                  <span className="text-xs text-accent/60 mt-1 block">
-                    Recomendado: 60 segundos
-                  </span>
+                  <span className="text-xs text-accent/60 mt-1 block">Recomendado: 60 segundos</span>
                 </div>
               </div>
             </div>
 
             {error && (
-              <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl text-sm">
-                {error}
-              </div>
+              <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl text-sm">{error}</div>
             )}
 
             <div className="flex justify-end space-x-4">
-              <button
-                type="button"
-                onClick={handleSaveDraft}
-                className="btn-secondary"
-              >
+              <button type="button" onClick={handleSaveDraft} className="btn-secondary">
                 Salvar Rascunho
               </button>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="btn-primary"
-              >
+              <button type="submit" disabled={isLoading} className="btn-primary">
                 {isLoading ? (
                   <>
                     <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
-                    {isDraft ? "Salvando..." : "Criando..."}
+                    {isDraft ? 'Salvando...' : 'Criando...'}
                   </>
                 ) : isDraft ? (
-                  "Salvar Rascunho"
+                  'Salvar Rascunho'
                 ) : (
-                  "Criar Campanha"
+                  'Criar Campanha'
                 )}
               </button>
             </div>
@@ -536,17 +460,9 @@ const NewCampaign = () => {
             <div className="p-4 min-h-[400px] flex flex-col justify-end">
               {(imagePreview || message) && (
                 <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden mb-2 self-start max-w-[280px]">
-                  {imagePreview && (
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="w-full object-cover"
-                    />
-                  )}
+                  {imagePreview && <img src={imagePreview} alt="Preview" className="w-full object-cover" />}
                   {message && (
-                    <div className="px-4 py-2 text-sm text-zinc-800 whitespace-pre-wrap break-words">
-                      {message}
-                    </div>
+                    <div className="px-4 py-2 text-sm text-zinc-800 whitespace-pre-wrap break-words">{message}</div>
                   )}
                 </div>
               )}
