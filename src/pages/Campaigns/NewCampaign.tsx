@@ -196,8 +196,8 @@ const NewCampaign = () => {
             delay: messageDelay,
             status: draft ? 'Draft' : isImmediate ? 'Scheduled' : 'Scheduled',
             device_id: selectedDevice,
-            nome_da_instancia: null,
-            apikey_da_instancia: null
+            nome_da_instancia: user?.nome_da_instancia,
+            apikey_da_instancia: user?.apikey
           }
         ])
         .select()
