@@ -8,6 +8,10 @@ import {
   ReactNode,
 } from "react";
 
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL,
+});
+
 interface User {
   id: string;
   email: string;
@@ -21,7 +25,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
+  logout: () => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(
@@ -31,57 +35,55 @@ export const AuthContext = createContext<AuthContextType | undefined>(
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  useEffect(() => {
+    try {
+      const storedToken = localStorage.getItem("token");
+      const storedUser = localStorage.getItem("user");
+
+      if (storedToken && storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        api.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
+      }
+    } catch (error) {
+      console.error("Falha ao carregar sessão do localStorage", error);
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   const login = async (email: string, password: string) => {
-    const response = await axios.post(API_ENDPOINTS.auth.login, {
+    const response = await api.post(API_ENDPOINTS.auth.login, {
       email,
       password,
     });
-    if (response.data && response.data.user) {
-      setUser(response.data.user);
+
+    if (response.data && response.data.user && response.data.token) {
+      const { user, token } = response.data;
+
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("token", token);
+
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+      setUser(user);
     }
   };
 
   const signup = async (name: string, email: string, password: string) => {
-    await axios.post(API_ENDPOINTS.auth.signup, { name, email, password });
+    await api.post(API_ENDPOINTS.auth.signup, { name, email, password });
   };
 
-  const logout = async () => {
-    try {
-      await axios.post(
-        API_ENDPOINTS.auth.logout,
-        {},
-        { withCredentials: true }
-      );
-    } catch (error) {
-      console.error(
-        "Logout falhou, limpando o estado local de qualquer maneira.",
-        error
-      );
-    } finally {
-      setUser(null);
-    }
+  const logout = () => {
+    setUser(null);
+
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+
+    delete api.defaults.headers.common["Authorization"];
   };
-
-  useEffect(() => {
-    const checkUserSession = async () => {
-      try {
-        const response = await axios.get(API_ENDPOINTS.auth.me, {
-          withCredentials: true,
-        });
-
-        if (response.data && response.data.user) {
-          setUser(response.data.user);
-        }
-      } catch (error) {
-        setUser(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkUserSession();
-  }, []);
 
   const value = {
     user,
@@ -105,3 +107,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+export default api;
