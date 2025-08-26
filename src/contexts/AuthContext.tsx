@@ -1,16 +1,6 @@
 import { API_ENDPOINTS } from "@/config/api";
-import axios from "axios";
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  ReactNode,
-} from "react";
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-});
+import apiClient from "@/lib/api.client";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
 interface User {
   id: string;
@@ -28,9 +18,7 @@ interface AuthContextType {
   logout: () => void;
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(
-  undefined
-);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -43,7 +31,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (storedToken && storedUser) {
         const parsedUser = JSON.parse(storedUser);
         setUser(parsedUser);
-        api.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
+        apiClient.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
       }
     } catch (error) {
       console.error("Falha ao carregar sessão do localStorage", error);
@@ -55,7 +43,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const response = await api.post(API_ENDPOINTS.auth.login, {
+    const response = await apiClient.post(API_ENDPOINTS.auth.login, {
       email,
       password,
     });
@@ -66,14 +54,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem("user", JSON.stringify(user));
       localStorage.setItem("token", token);
 
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      apiClient.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
       setUser(user);
     }
   };
 
   const signup = async (name: string, email: string, password: string) => {
-    await api.post(API_ENDPOINTS.auth.signup, { name, email, password });
+    await apiClient.post(API_ENDPOINTS.auth.signup, { name, email, password });
   };
 
   const logout = () => {
@@ -82,7 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem("user");
     localStorage.removeItem("token");
 
-    delete api.defaults.headers.common["Authorization"];
+    delete apiClient.defaults.headers.common["Authorization"];
   };
 
   const value = {
@@ -93,11 +81,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     logout,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {!isLoading && children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{!isLoading && children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {
@@ -107,5 +91,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
-export default api;

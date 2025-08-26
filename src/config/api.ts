@@ -1,46 +1,41 @@
-const VITE_API_URL = import.meta.env.VITE_API_URL;
-
-export const AUTH_URL = `${VITE_API_URL}/auth`;
-
-export const API_URL = `${VITE_API_URL}/api`;
+export const API_URL = import.meta.env.VITE_API_URL;
 
 console.log("API_URL from .env:", API_URL);
-console.log("AUTH_URL from .env:", AUTH_URL);
 
 export const API_ENDPOINTS = {
   auth: {
-    login: `${AUTH_URL}/login`,
-    signup: `${AUTH_URL}/register`,
-    logout: `${AUTH_URL}/logout`,
-    me: `${AUTH_URL}/me`,
+    login: `/auth/login`,
+    signup: `/auth/register`,
+    logout: `/auth/logout`,
+    me: `/auth/me`,
   },
 
   dashboard: {
-    stats: `/dashboard/stats`,
+    stats: `/api/dashboard/stats`,
   },
   whatsapp: {
-    connect: `/whatsapp/connect`,
-    keepAlive: `/baileys/keep-alive`,
-    devices: `/whatsapp/devices`,
-    status: (deviceId: string) => `/whatsapp/status/${deviceId}`,
-    send: `/whatsapp/send`,
-    qr: (deviceId: string) => `/whatsapp/qr/${deviceId}`,
-    deleteSession: (deviceId: string) => `/whatsapp/session/${deviceId}`,
-    deleteAuth: (deviceId: string) => `/whatsapp/devices/${deviceId}/auth`,
+    connect: `/api/whatsapp/connect`,
+    keepAlive: `/api/baileys/keep-alive`,
+    devices: `/api/whatsapp/devices`,
+    status: (deviceId: string) => `/api/whatsapp/status/${deviceId}`,
+    send: `/api/whatsapp/send`,
+    qr: (deviceId: string) => `/api/whatsapp/qr/${deviceId}`,
+    deleteSession: (deviceId: string) => `/api/whatsapp/session/${deviceId}`,
+    deleteAuth: (deviceId: string) => `/api/whatsapp/devices/${deviceId}/auth`,
   },
   campaigns: {
-    list: `/campaigns`,
-    withStats: `/campaigns/with-stats`,
-    sends: (id: number) => `/campaigns/${id}/sends`,
-    create: `/campaigns`,
-    update: (id: number) => `/campaigns/${id}`,
-    delete: (id: number) => `/campaigns/${id}`,
+    list: `/api/campaigns`,
+    withStats: `/api/campaigns/with-stats`,
+    sends: (id: number) => `/api/campaigns/${id}/sends`,
+    create: `/api/campaigns`,
+    update: (id: number) => `/api/campaigns/${id}`,
+    delete: (id: number) => `/api/campaigns/${id}`,
   },
   contacts: {
-    list: `/contacts`,
-    create: `/contacts`,
-    update: (id: string) => `/contacts/${id}`,
-    delete: (id: string) => `/contacts/${id}`,
+    list: `/api/contacts`,
+    create: `/api/contacts`,
+    update: (id: string) => `/api/contacts/${id}`,
+    delete: (id: string) => `/api/contacts/${id}`,
   },
   chatbots: {
     create: `/chatbots`,
