@@ -1,52 +1,64 @@
-export const API_URL = import.meta.env.VITE_API_URL;
+const VITE_API_URL = import.meta.env.VITE_API_URL;
 
-console.log('API_URL from .env:', API_URL);
+export const AUTH_URL = `${VITE_API_URL}/auth`;
+
+export const API_URL = `${VITE_API_URL}/api`;
+
+console.log("API_URL from .env:", API_URL);
+console.log("AUTH_URL from .env:", AUTH_URL);
 
 export const API_ENDPOINTS = {
+  auth: {
+    login: `${AUTH_URL}/login`,
+    signup: `${AUTH_URL}/register`,
+    logout: `${AUTH_URL}/logout`,
+    me: `${AUTH_URL}/me`,
+  },
+
   dashboard: {
-    stats: `${API_URL}/dashboard/stats`,
+    stats: `/dashboard/stats`,
   },
   whatsapp: {
-    connect: `${API_URL}/whatsapp/connect`,
-    keepAlive: `${API_URL}/baileys/keep-alive`,
-    devices: `${API_URL}/whatsapp/devices`,
-    status: (deviceId: string) => `${API_URL}/whatsapp/status/${deviceId}`,
-    send: `${API_URL}/whatsapp/send`,
-    qr: (deviceId: string) => `${API_URL}/whatsapp/qr/${deviceId}`,
-    deleteSession: (deviceId: string) => `${API_URL}/whatsapp/session/${deviceId}`,
-    deleteAuth: (deviceId: string) => `${API_URL}/whatsapp/devices/${deviceId}/auth`
+    connect: `/whatsapp/connect`,
+    keepAlive: `/baileys/keep-alive`,
+    devices: `/whatsapp/devices`,
+    status: (deviceId: string) => `/whatsapp/status/${deviceId}`,
+    send: `/whatsapp/send`,
+    qr: (deviceId: string) => `/whatsapp/qr/${deviceId}`,
+    deleteSession: (deviceId: string) => `/whatsapp/session/${deviceId}`,
+    deleteAuth: (deviceId: string) => `/whatsapp/devices/${deviceId}/auth`,
   },
   campaigns: {
-    list: `${API_URL}/campaigns`,
-    withStats: `${API_URL}/campaigns/with-stats`,
-    sends: (id: number) => `${API_URL}/campaigns/${id}/sends`,
-    create: `${API_URL}/campaigns`,
-    update: (id: number) => `${API_URL}/campaigns/${id}`,
-    delete: (id: number) => `${API_URL}/campaigns/${id}`
+    list: `/campaigns`,
+    withStats: `/campaigns/with-stats`,
+    sends: (id: number) => `/campaigns/${id}/sends`,
+    create: `/campaigns`,
+    update: (id: number) => `/campaigns/${id}`,
+    delete: (id: number) => `/campaigns/${id}`,
   },
   contacts: {
-    list: `${API_URL}/contacts`,
-    create: `${API_URL}/contacts`,
-    update: (id: string) => `${API_URL}/contacts/${id}`,
-    delete: (id: string) => `${API_URL}/contacts/${id}`
+    list: `/contacts`,
+    create: `/contacts`,
+    update: (id: string) => `/contacts/${id}`,
+    delete: (id: string) => `/contacts/${id}`,
   },
   chatbots: {
-    create: `${API_URL}/chatbots`,
-    list: `${API_URL}/chatbots`,
-    toggle: (phoneNumber: string) => `${API_URL}/chatbots/${phoneNumber}/toggle`,
-    remove: (phoneNumber: string) => `${API_URL}/chatbots/${phoneNumber}`
+    create: `/chatbots`,
+    list: `/chatbots`,
+    toggle: (phoneNumber: string) => `/chatbots/${phoneNumber}/toggle`,
+    remove: (phoneNumber: string) => `/chatbots/${phoneNumber}`,
   },
   mistral: {
-    agents: `${API_URL}/mistral/agents`,
-    createAgent: `${API_URL}/mistral/agents`,
-    models: `${API_URL}/mistral/models`
+    agents: `/mistral/agents`,
+    createAgent: `/mistral/agents`,
+    models: `/mistral/models`,
   },
   debug: {
-    autoCleanup: `${API_URL}/debug/auto-cleanup`,
-    caches: `${API_URL}/debug/caches`
+    autoCleanup: `/debug/auto-cleanup`,
+    caches: `/debug/caches`,
   },
   scheduledMessages: {
-    process: `${API_URL}/processScheduledMessages`
+    process: `/processScheduledMessages`,
   },
-  health: `${API_URL}/health`
+  health: `/health`,
 };

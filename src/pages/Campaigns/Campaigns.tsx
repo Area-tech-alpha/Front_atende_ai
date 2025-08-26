@@ -28,9 +28,11 @@ const Campaigns = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { user } = useAuth();
-
-  // Use useCallback para garantir que a função fetchCampaigns seja a mesma
-  // entre as renderizações, a menos que 'user' mude.
+  const handleDeleteCampaign = (deletedCampaignId: number) => {
+    setCampaigns(currentCampaigns =>
+      currentCampaigns.filter(campaign => campaign.id !== deletedCampaignId)
+    );
+  };
   const fetchCampaigns = useCallback(async () => {
     try {
       if (!user) return;
@@ -203,9 +205,10 @@ const Campaigns = () => {
                 errorCount: campaign.errorCount ?? 0,
                 date: campaign.data_de_envio || campaign.created_at,
                 template: campaign.imagem ? 'Com Imagem' : 'Apenas Texto',
-                nome_da_instancia: campaign.nome_da_instancia
+                nome_da_instancia: campaign.nome_da_instancia,
               }}
               reuseCampaign={campaign}
+              onDelete={handleDeleteCampaign}
             />
           ))
         ) : (

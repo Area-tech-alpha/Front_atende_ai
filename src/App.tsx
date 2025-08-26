@@ -11,13 +11,13 @@ import NewCampaign from './pages/Campaigns/NewCampaign';
 import Contacts from './pages/Contacts/Contacts';
 import Settings from './pages/Settings/Settings';
 import Layout from './components/Layout/Layout';
-import NotFound from './pages/NotFound';
-import Instances from './pages/Evolution';
-import Chat from './pages/Chat';
 import ConnectWhatsApp from './pages/ConnectWhatsApp';
+import Chat from './pages/Chat';
+import Instances from './pages/Evolution';
 import WhatsAppConnections from './pages/WhatsAppConnections';
-import Chatbot from './pages/Chatbot';
-import CreateAgent from './pages/CreateAgent';
+import NotFound from './pages/NotFound';
+// import Chatbot from './pages/Chatbot';
+// import CreateAgent from './pages/CreateAgent';
 
 const ProtectedRouteComponent = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
@@ -100,20 +100,20 @@ function App() {
                 }
               />
               <Route
-                path="chatbot"
-                element={
-                  <ProtectedRouteComponent>
-                    <Chatbot />
-                  </ProtectedRouteComponent>
-                }
+                // path="chatbot"
+                // element={
+                //   <ProtectedRouteComponent>
+                //     <Chatbot />
+                //   </ProtectedRouteComponent>
+                // }
               />
               <Route
-                path="criar-robo"
-                element={
-                  <ProtectedRouteComponent>
-                    <CreateAgent />
-                  </ProtectedRouteComponent>
-                }
+                // path="criar-robo"
+                // element={
+                //   <ProtectedRouteComponent>
+                //     <CreateAgent />
+                //   </ProtectedRouteComponent>
+                // }
               />
             </Route>
 
