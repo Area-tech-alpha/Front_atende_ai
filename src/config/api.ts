@@ -1,9 +1,11 @@
 export const API_URL = import.meta.env.VITE_API_URL;
 
-// Adicionado para debug. Você pode remover após a correção.
 console.log('API_URL from .env:', API_URL);
 
 export const API_ENDPOINTS = {
+  dashboard: {
+    stats: `${API_URL}/dashboard/stats`,
+  },
   whatsapp: {
     connect: `${API_URL}/whatsapp/connect`,
     keepAlive: `${API_URL}/baileys/keep-alive`,
@@ -16,9 +18,11 @@ export const API_ENDPOINTS = {
   },
   campaigns: {
     list: `${API_URL}/campaigns`,
+    withStats: `${API_URL}/campaigns/with-stats`,
+    sends: (id: number) => `${API_URL}/campaigns/${id}/sends`,
     create: `${API_URL}/campaigns`,
-    update: (id: string) => `${API_URL}/campaigns/${id}`,
-    delete: (id: string) => `${API_URL}/campaigns/${id}`
+    update: (id: number) => `${API_URL}/campaigns/${id}`,
+    delete: (id: number) => `${API_URL}/campaigns/${id}`
   },
   contacts: {
     list: `${API_URL}/contacts`,
