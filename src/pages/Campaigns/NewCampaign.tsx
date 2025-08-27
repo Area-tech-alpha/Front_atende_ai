@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { X, Loader2, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "../../lib/supabase";
 import { API_ENDPOINTS } from "@/config/api";
 import apiClient from "@/lib/api.client";
 
@@ -118,7 +117,6 @@ const NewCampaign = () => {
       imageInputRef.current.value = "";
     }
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -127,16 +125,19 @@ const NewCampaign = () => {
     try {
       let imageUrl = imagePreview;
       if (selectedImage) {
-        const { data: imageData, error: imageError } = await supabase.storage
-          .from("imagemevolution")
-          .upload(
-            `campaign-images/${Date.now()}-${selectedImage.name}`,
-            selectedImage
-          );
-        if (imageError) throw imageError;
-        imageUrl = supabase.storage
-          .from("imagemevolution")
-          .getPublicUrl(imageData.path).data.publicUrl;
+        const formData = new FormData();
+        formData.append("image", selectedImage);
+
+        const uploadResponse = await apiClient.post(
+          API_ENDPOINTS.upload.image,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+        imageUrl = uploadResponse.data.imageUrl;
       }
 
       let scheduledDateTime = null;
@@ -156,7 +157,11 @@ const NewCampaign = () => {
           : scheduledDateTime,
         contatos: selectedContactListId,
         delay: messageDelay,
-       status: isDraft ? "Rascunho" : (isImmediate ? "Imediata" : "Agendada"),
+        status: isDraft
+          ? "Rascunho"
+          : isImmediate
+          ? "Em Andamento"
+          : "Agendada",
         device_id: selectedDevice,
         nome_da_instancia:
           devices.find((d) => d.deviceId === selectedDevice)?.connection_name ||
