@@ -36,6 +36,7 @@ export const API_ENDPOINTS = {
     create: `/api/contacts`,
     update: (id: string) => `/api/contacts/${id}`,
     delete: (id: string) => `/api/contacts/${id}`,
+    edit: (id: number) => `/contacts/${id}`,
   },
   chatbots: {
     create: `/chatbots`,
