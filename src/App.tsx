@@ -16,6 +16,7 @@ import Chat from './pages/Chat';
 import Instances from './pages/Evolution';
 import WhatsAppConnections from './pages/WhatsAppConnections';
 import NotFound from './pages/NotFound';
+import { ToastContainer } from 'react-toastify';
 // import Chatbot from './pages/Chatbot';
 // import CreateAgent from './pages/CreateAgent';
 
@@ -32,96 +33,100 @@ const ProtectedRouteComponent = ({ children }: { children: React.ReactNode }) =>
 function App() {
   return (
     <AuthProvider>
-      <EvolutionProvider>
-        <Router>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
+      <>
+        <EvolutionProvider>
+          <Router>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
 
-            {/* Protected routes */}
-            <Route
-              path="/"
-              element={
-                <ProtectedRouteComponent>
-                  <Layout />
-                </ProtectedRouteComponent>
-              }>
-              <Route index element={<Dashboard />} />
-              <Route path="campaigns" element={<Campaigns />} />
-              <Route path="campaigns/new" element={<NewCampaign />} />
+              {/* Protected routes */}
               <Route
-                path="instances"
+                path="/"
                 element={
                   <ProtectedRouteComponent>
-                    <Instances />
+                    <Layout />
                   </ProtectedRouteComponent>
                 }
-              />
-              <Route
-                path="baileys"
-                element={
-                  <ProtectedRouteComponent>
-                    <ConnectWhatsApp />
-                  </ProtectedRouteComponent>
-                }
-              />
-              <Route
-                path="contacts"
-                element={
-                  <ProtectedRouteComponent>
-                    <Contacts />
-                  </ProtectedRouteComponent>
-                }
-              />
-              <Route
-                path="chat"
-                element={
-                  <ProtectedRouteComponent>
-                    <Chat />
-                  </ProtectedRouteComponent>
-                }
-              />
-              <Route path="settings" element={<Settings />} />
-              <Route
-                path="whatsapp/connect"
-                element={
-                  <ProtectedRouteComponent>
-                    <ConnectWhatsApp />
-                  </ProtectedRouteComponent>
-                }
-              />
-              <Route
-                path="whatsapp/connections"
-                element={
-                  <ProtectedRouteComponent>
-                    <WhatsAppConnections />
-                  </ProtectedRouteComponent>
-                }
-              />
-              <Route
+              >
+                <Route index element={<Dashboard />} />
+                <Route path="campaigns" element={<Campaigns />} />
+                <Route path="campaigns/new" element={<NewCampaign />} />
+                <Route
+                  path="instances"
+                  element={
+                    <ProtectedRouteComponent>
+                      <Instances />
+                    </ProtectedRouteComponent>
+                  }
+                />
+                <Route
+                  path="baileys"
+                  element={
+                    <ProtectedRouteComponent>
+                      <ConnectWhatsApp />
+                    </ProtectedRouteComponent>
+                  }
+                />
+                <Route
+                  path="contacts"
+                  element={
+                    <ProtectedRouteComponent>
+                      <Contacts />
+                    </ProtectedRouteComponent>
+                  }
+                />
+                <Route
+                  path="chat"
+                  element={
+                    <ProtectedRouteComponent>
+                      <Chat />
+                    </ProtectedRouteComponent>
+                  }
+                />
+                <Route path="settings" element={<Settings />} />
+                <Route
+                  path="whatsapp/connect"
+                  element={
+                    <ProtectedRouteComponent>
+                      <ConnectWhatsApp />
+                    </ProtectedRouteComponent>
+                  }
+                />
+                <Route
+                  path="whatsapp/connections"
+                  element={
+                    <ProtectedRouteComponent>
+                      <WhatsAppConnections />
+                    </ProtectedRouteComponent>
+                  }
+                />
+                <Route
                 // path="chatbot"
                 // element={
-                //   <ProtectedRouteComponent>
-                //     <Chatbot />
-                //   </ProtectedRouteComponent>
+                //   <ProtectedRouteComponent>
+                //     <Chatbot />
+                //   </ProtectedRouteComponent>
                 // }
-              />
-              <Route
+                />
+                <Route
                 // path="criar-robo"
                 // element={
-                //   <ProtectedRouteComponent>
-                //     <CreateAgent />
-                //   </ProtectedRouteComponent>
+                //   <ProtectedRouteComponent>
+                //     <CreateAgent />
+                //   </ProtectedRouteComponent>
                 // }
-              />
-            </Route>
+                />
+              </Route>
 
-            {/* 404 route */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Router>
-      </EvolutionProvider>
+              {/* 404 route */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Router>
+        </EvolutionProvider>
+      </>
+      <ToastContainer />
     </AuthProvider>
   );
 }
