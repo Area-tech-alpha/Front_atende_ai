@@ -32,6 +32,8 @@ const CampaignCard: React.FC<CampaignCardProps> = ({
         return "bg-yellow-100 text-yellow-700";
       case "Agendada":
         return "bg-blue-100 text-blue-700";
+        case "Imediata":
+        return "bg-blue-100 text-blue-700";
       case "Rascunho":
         return "bg-zinc-200 text-zinc-600";
       default:

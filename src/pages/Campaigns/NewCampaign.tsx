@@ -156,7 +156,7 @@ const NewCampaign = () => {
           : scheduledDateTime,
         contatos: selectedContactListId,
         delay: messageDelay,
-        status: isDraft ? "Rascunho" : "Agendada",
+       status: isDraft ? "Rascunho" : (isImmediate ? "Imediata" : "Agendada"),
         device_id: selectedDevice,
         nome_da_instancia:
           devices.find((d) => d.deviceId === selectedDevice)?.connection_name ||

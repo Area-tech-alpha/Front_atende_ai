@@ -7,7 +7,7 @@ import apiClient from "@/lib/api.client";
 import { API_ENDPOINTS } from "@/config/api";
 import { toast } from "react-toastify";
 
-type CampaignStatus = "Concluída" | "Em Andamento" | "Agendada" | "Rascunho" | "Não concluida" | "Concluída com erros";
+type CampaignStatus = "Concluída" | "Em Andamento" | "Agendada" | "Rascunho" | "Não concluida" | "Concluída com erros" | "Imediata";
 
 export interface Campaign {
   id: number;
@@ -122,9 +122,10 @@ const Campaigns = () => {
                   <option value="All">Todos</option>
                   <option value="Rascunho">Rascunho</option>
                   <option value="Agendada">Agendada</option>
+                  <option value="Imediata">Imediata</option>
                   <option value="Em Andamento">Em Andamento</option>
                   <option value="Concluída">Concluída</option>
-                  <option value="Falhou">Falhou</option>
+                  <option value="Não Concluída">Não Concluída</option>
                   <option value="Concluída com erros">Concluída com erros</option>
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
