@@ -154,7 +154,7 @@ const ConnectWhatsApp: React.FC = () => {
               className="absolute top-4 right-4 text-accent/60  hover:text-text-primary transition-colors">
               <X size={24} />
             </button>
-            <h2 className="text-xl font-bold text-text-primary mb-2">Escaneie para Conectar</h2>
+            <h2 className="text-xl font-bold text-primary mb-2">Escaneie para Conectar</h2>
             <p className="text-accent/60 mb-6 text-center text-sm">
               Abra o WhatsApp no seu celular e conecte um novo aparelho.
             </p>
