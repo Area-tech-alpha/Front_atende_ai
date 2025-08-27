@@ -4,6 +4,7 @@ import { MoreVertical, Wifi, WifiOff, Loader2, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
 import { API_ENDPOINTS } from "@/config/api";
 import apiClient from "@/lib/api.client";
+import ConfirmToast from "@/components/ui/ConfirmToast"; 
 
 interface WhatsAppConnection {
   deviceId: string;
@@ -64,22 +65,35 @@ const WhatsAppConnections: React.FC = () => {
   };
 
   const handleDeleteConnection = async (deviceId: string) => {
-    if (
-      !window.confirm(
-        "Tem certeza? Isso removerá os dados de autenticação e desconectará o aparelho."
-      )
-    )
-      return;
-
-    try {
-      await apiClient.delete(API_ENDPOINTS.whatsapp.deleteAuth(deviceId));
-      toast.success("Conexão excluída com sucesso!");
-      fetchConnections();
-    } catch (err) {
-      toast.error("Não foi possível excluir a conexão.");
-    } finally {
-      setOpenMenuId(null);
-    }
+    toast.warn(
+      ({ closeToast }) => (
+        <ConfirmToast
+          message="Tem certeza? Isso removerá os dados de autenticação e desconectará o aparelho."
+          onConfirm={async () => {
+            try {
+              await apiClient.delete(
+                API_ENDPOINTS.whatsapp.deleteAuth(deviceId)
+              );
+              toast.success("Conexão excluída com sucesso!");
+              fetchConnections();
+            } catch (err) {
+              toast.error("Não foi possível excluir a conexão.");
+            } finally {
+              setOpenMenuId(null);
+            }
+          }}
+          onCancel={() => {
+            setOpenMenuId(null);
+            closeToast();
+          }}
+          closeToast={closeToast} 
+        />
+      ),
+      {
+        autoClose: false,
+        closeOnClick: false,
+      }
+    );
   };
 
   return (

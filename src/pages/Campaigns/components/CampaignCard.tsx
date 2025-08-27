@@ -7,6 +7,8 @@ import { useAuth } from "@/hooks/useAuth";
 import apiClient from "@/lib/api.client";
 import { AxiosError } from "axios";
 import { Campaign } from "../Campaigns";
+import ConfirmToast from "@/components/ui/ConfirmToast";
+import { toast } from "react-toastify";
 
 interface CampaignCardProps {
   campaign: Campaign;
@@ -14,7 +16,11 @@ interface CampaignCardProps {
   onDelete: (id: number) => void;
 }
 
-const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, reuseCampaign, onDelete }) => {
+const CampaignCard: React.FC<CampaignCardProps> = ({
+  campaign,
+  reuseCampaign,
+  onDelete,
+}) => {
   const navigate = useNavigate();
   const [showDetails, setShowDetails] = React.useState(false);
 
@@ -43,38 +49,63 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, reuseCampaign, on
   };
   const { user } = useAuth();
   const handleDelete = async () => {
-    if (window.confirm(`Tem certeza que deseja excluir a campanha "${campaign.name}"?`)) {
-      if (!user?.id) {
-        alert("Erro: Usuário não autenticado. Por favor, faça login novamente.");
-        return;
+    toast.warn(
+      ({ closeToast }) => (
+        <ConfirmToast
+          message={`Tem certeza que deseja excluir a campanha "${campaign.name}"?`}
+          onConfirm={async () => {
+            if (!user?.id) {
+              toast.error(
+                "Erro: Usuário não autenticado. Por favor, faça login novamente."
+              );
+              return;
+            }
+
+            try {
+              await apiClient.delete(
+                API_ENDPOINTS.campaigns.delete(campaign.id)
+              );
+
+              toast.success("Campanha excluída com sucesso!");
+              onDelete(campaign.id);
+            } catch (error) {
+              console.error("Falha ao excluir campanha:", error);
+              let errorMessage =
+                "Ocorreu um erro na comunicação com o servidor.";
+
+              if (error instanceof AxiosError) {
+                errorMessage =
+                  error.response?.data?.message ||
+                  "Erro retornado pelo servidor.";
+              }
+
+              toast.error(`Erro ao excluir campanha: ${errorMessage}`);
+            }
+          }}
+          onCancel={() => {
+            console.log("Exclusão da campanha cancelada.");
+          }}
+          closeToast={closeToast}
+        />
+      ),
+      {
+        autoClose: false,
+        closeOnClick: false,
       }
-
-      try {
-        await apiClient.delete(API_ENDPOINTS.campaigns.delete(campaign.id));
-
-        alert("Campanha excluída com sucesso!");
-        onDelete(campaign.id);
-      } catch (error) {
-        console.error("Falha ao excluir campanha:", error);
-        let errorMessage = "Ocorreu um erro na comunicação com o servidor.";
-
-        if (error instanceof AxiosError) {
-          errorMessage = error.response?.data?.message || "Erro retornado pelo servidor.";
-        }
-
-        alert(`Erro ao excluir campanha: ${errorMessage}`);
-      }
-    }
+    );
   };
 
   return (
     <div className="card group hover:shadow-glow transition-all duration-300">
       <div className="flex justify-between items-start mb-3">
-        <h3 className="font-display font-bold text-accent truncate">{campaign.name}</h3>
+        <h3 className="font-display font-bold text-accent truncate">
+          {campaign.name}
+        </h3>
         <span
           className={`px-3 py-1.5 inline-flex text-xs leading-5 font-semibold rounded-lg ${getStatusStyle(
             campaign.status
-          )}`}>
+          )}`}
+        >
           {campaign.status === "Concluída"
             ? "Concluída"
             : campaign.status === "Em Andamento"
@@ -84,7 +115,9 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, reuseCampaign, on
             : "Rascunho"}
         </span>
       </div>
-      <p className="text-sm text-accent/60 mb-4 line-clamp-2">{campaign.description}</p>
+      <p className="text-sm text-accent/60 mb-4 line-clamp-2">
+        {campaign.description}
+      </p>
 
       <div className="flex items-center text-sm text-accent/60 mb-4">
         <Calendar size={16} className="mr-1" />
@@ -94,7 +127,8 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, reuseCampaign, on
         {campaign.nome_da_instancia && <span className="mx-2">•</span>}
         {campaign.nome_da_instancia && (
           <span>
-            Instância: <span className="text-primary">{campaign.nome_da_instancia}</span>
+            Instância:{" "}
+            <span className="text-primary">{campaign.nome_da_instancia}</span>
           </span>
         )}
       </div>
@@ -122,27 +156,31 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, reuseCampaign, on
         {/* Botão Ver Detalhes */}
         <button
           className="text-accent/60 text-sm font-medium hover:text-primary transition-colors duration-200 flex items-center"
-          onClick={() => setShowDetails(true)}>
+          onClick={() => setShowDetails(true)}
+        >
           <ArrowUpRight size={16} className="mr-1" />
           Ver Detalhes
         </button>
 
         <div className="flex items-center space-x-2">
           {/* Bloco revertido para a lógica original */}
-          {(campaign.status === "Concluída" || campaign.status === "Rascunho") && (
+          {(campaign.status === "Concluída" ||
+            campaign.status === "Rascunho") && (
             <button
               className="text-accent/60 text-sm font-medium hover:text-primary transition-colors duration-200 ml-2"
               onClick={() =>
                 navigate("/campaigns/new", {
                   state: { reuseCampaign: reuseCampaign || campaign },
                 })
-              }>
+              }
+            >
               Reutilizar
             </button>
           )}
 
           <div className="flex items-center border-l border-secondary-dark pl-2 space-x-1">
-            {(campaign.status === "Rascunho" || campaign.status === "Agendada") && (
+            {(campaign.status === "Rascunho" ||
+              campaign.status === "Agendada") && (
               <button
                 className="p-2 rounded-md hover:bg-secondary-dark/50 text-accent/60 hover:text-primary transition-colors"
                 title="Editar"
@@ -150,7 +188,8 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, reuseCampaign, on
                   navigate("/campaigns/new", {
                     state: { reuseCampaign: reuseCampaign || campaign },
                   })
-                }>
+                }
+              >
                 <Edit size={16} />
               </button>
             )}
@@ -158,14 +197,19 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, reuseCampaign, on
             <button
               className="p-2 rounded-md hover:bg-secondary-dark/50 text-red-500/80 hover:text-red-500 transition-colors"
               title="Excluir"
-              onClick={handleDelete}>
+              onClick={handleDelete}
+            >
               <Trash2 size={16} />
             </button>
           </div>
         </div>
       </div>
 
-      <CampaignDetailsModal campaignId={campaign.id} open={showDetails} onClose={() => setShowDetails(false)} />
+      <CampaignDetailsModal
+        campaignId={campaign.id}
+        open={showDetails}
+        onClose={() => setShowDetails(false)}
+      />
     </div>
   );
 };

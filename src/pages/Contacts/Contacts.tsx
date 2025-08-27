@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "react-toastify";
 import { API_ENDPOINTS } from "@/config/api";
 import apiClient from "@/lib/api.client";
+import ConfirmToast from "@/components/ui/ConfirmToast";
 
 interface Contact {
   name: string;
@@ -126,15 +127,30 @@ const ContactsPage: React.FC = () => {
   };
 
   const handleDeleteList = async (listId: number) => {
-    if (window.confirm("Tem certeza que deseja excluir esta lista?")) {
-      try {
-        await apiClient.delete(API_ENDPOINTS.contacts.delete(String(listId)));
-        toast.success("Lista excluída!");
-        setContactLists((prev) => prev.filter((l) => l.id !== listId));
-      } catch (error) {
-        toast.error("Erro ao excluir lista.");
+    toast.warn(
+      ({ closeToast }) => (
+        <ConfirmToast
+          message="Tem certeza que deseja excluir esta lista?"
+          onConfirm={async () => {
+            try {
+              await apiClient.delete(
+                API_ENDPOINTS.contacts.delete(String(listId))
+              );
+              toast.success("Lista excluída!");
+              setContactLists((prev) => prev.filter((l) => l.id !== listId));
+            } catch (error) {
+              toast.error("Erro ao excluir lista.");
+            }
+          }}
+          onCancel={() => {}}
+          closeToast={closeToast}
+        />
+      ),
+      {
+        autoClose: false,
+        closeOnClick: false,
       }
-    }
+    );
   };
 
   const handleExportList = () => {
