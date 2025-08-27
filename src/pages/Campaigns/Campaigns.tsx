@@ -5,21 +5,26 @@ import CampaignCard from "./components/CampaignCard";
 import { useAuth } from "@/hooks/useAuth";
 import apiClient from "@/lib/api.client";
 import { API_ENDPOINTS } from "@/config/api";
+import { toast } from "react-toastify";
 
-interface Campaign {
+type CampaignStatus = "Concluída" | "Em Andamento" | "Agendada" | "Rascunho" | "Não concluida" | "Concluída com erros";
+
+export interface Campaign {
   id: number;
   name: string;
+  description: string;
+  status: CampaignStatus;
+  sentCount: number;
+  deliveredCount: number;
+  readCount: number;
+  errorCount: number;
+  date: string;
+  template: string;
+  nome_da_instancia: string;
   texto: string;
   imagem: string | null;
   data_de_envio: string | null;
   contatos: number;
-  status: "Completed" | "In Progress" | "Scheduled" | "Draft";
-  created_at: string;
-  sentCount?: number;
-  deliveredCount?: number;
-  readCount?: number;
-  errorCount?: number;
-  nome_da_instancia: string;
 }
 
 const Campaigns = () => {
@@ -29,9 +34,11 @@ const Campaigns = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { user } = useAuth();
+
   const handleDeleteCampaign = (deletedCampaignId: number) => {
     setCampaigns((currentCampaigns) => currentCampaigns.filter((campaign) => campaign.id !== deletedCampaignId));
   };
+
   const fetchCampaigns = useCallback(async () => {
     setLoading(true);
     try {
@@ -42,20 +49,23 @@ const Campaigns = () => {
       setCampaigns(response.data);
     } catch (error) {
       console.error("Error fetching campaigns:", error);
+      toast.error("Falha ao carregar as campanhas.");
     } finally {
       setLoading(false);
     }
   }, [user]);
 
   useEffect(() => {
-    fetchCampaigns();
-  }, [fetchCampaigns]);
+    if (user) {
+      fetchCampaigns();
+    }
+  }, [fetchCampaigns, user]);
 
-  // Filter campaigns based on search query and status filter
   const filteredCampaigns = campaigns.filter((campaign) => {
     const matchesSearch =
       campaign.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      campaign.texto.toLowerCase().includes(searchQuery.toLowerCase());
+      campaign.description.toLowerCase().includes(searchQuery.toLowerCase());
+
     const matchesStatus = statusFilter === "All" || campaign.status === statusFilter;
 
     return matchesSearch && matchesStatus;
@@ -110,10 +120,12 @@ const Campaigns = () => {
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}>
                   <option value="All">Todos</option>
-                  <option value="Draft">Rascunho</option>
-                  <option value="Scheduled">Agendada</option>
-                  <option value="In Progress">Em Andamento</option>
-                  <option value="Completed">Concluída</option>
+                  <option value="Rascunho">Rascunho</option>
+                  <option value="Agendada">Agendada</option>
+                  <option value="Em Andamento">Em Andamento</option>
+                  <option value="Concluída">Concluída</option>
+                  <option value="Falhou">Falhou</option>
+                  <option value="Concluída com erros">Concluída com erros</option>
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
                   <ChevronDown size={16} className="text-accent/40" />
@@ -129,20 +141,7 @@ const Campaigns = () => {
           filteredCampaigns.map((campaign) => (
             <CampaignCard
               key={campaign.id}
-              campaign={{
-                id: campaign.id,
-                name: campaign.name,
-                description: campaign.texto,
-                status: campaign.status,
-                sentCount: campaign.sentCount ?? 0,
-                deliveredCount: campaign.deliveredCount ?? 0,
-                readCount: campaign.readCount ?? 0,
-                errorCount: campaign.errorCount ?? 0,
-                date: campaign.data_de_envio || campaign.created_at,
-                template: campaign.imagem ? "Com Imagem" : "Apenas Texto",
-                nome_da_instancia: campaign.nome_da_instancia,
-              }}
-              reuseCampaign={campaign}
+              campaign={campaign} // Passa o objeto inteiro, que já está no formato correto
               onDelete={handleDeleteCampaign}
             />
           ))
@@ -152,7 +151,7 @@ const Campaigns = () => {
               <Search size={24} className="text-primary" />
             </div>
             <h3 className="text-lg font-display font-bold text-accent mb-2">Nenhuma campanha encontrada</h3>
-            <p className="text-accent/60 mb-6">Tente ajustar sua busca ou critérios de filtro</p>
+            <p className="text-accent/60 mb-6">Tente ajustar sua busca ou crie sua primeira campanha.</p>
             <button onClick={() => navigate("/campaigns/new")} className="btn-primary">
               Criar Nova Campanha
             </button>

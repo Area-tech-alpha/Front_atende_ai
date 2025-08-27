@@ -6,20 +6,7 @@ import { API_ENDPOINTS } from "@/config/api";
 import { useAuth } from "@/hooks/useAuth";
 import apiClient from "@/lib/api.client";
 import { AxiosError } from "axios";
-
-interface Campaign {
-  id: number;
-  name: string;
-  description: string;
-  status: "Completed" | "In Progress" | "Scheduled" | "Draft";
-  sentCount: number;
-  deliveredCount: number;
-  readCount: number;
-  date: string;
-  template: string;
-  errorCount?: number;
-  nome_da_instancia?: string;
-}
+import { Campaign } from "../Campaigns";
 
 interface CampaignCardProps {
   campaign: Campaign;
@@ -27,23 +14,19 @@ interface CampaignCardProps {
   onDelete: (id: number) => void;
 }
 
-const CampaignCard: React.FC<CampaignCardProps> = ({
-  campaign,
-  reuseCampaign,
-  onDelete,
-}) => {
+const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, reuseCampaign, onDelete }) => {
   const navigate = useNavigate();
   const [showDetails, setShowDetails] = React.useState(false);
 
   const getStatusStyle = (status: Campaign["status"]) => {
     switch (status) {
-      case "Completed":
+      case "Concluída":
         return "bg-green-100 text-green-700";
-      case "In Progress":
+      case "Em Andamento":
         return "bg-yellow-100 text-yellow-700";
-      case "Scheduled":
+      case "Agendada":
         return "bg-blue-100 text-blue-700";
-      case "Draft":
+      case "Rascunho":
         return "bg-zinc-200 text-zinc-600";
       default:
         return "bg-zinc-200 text-zinc-600";
@@ -60,22 +43,14 @@ const CampaignCard: React.FC<CampaignCardProps> = ({
   };
   const { user } = useAuth();
   const handleDelete = async () => {
-    if (
-      window.confirm(
-        `Tem certeza que deseja excluir a campanha "${campaign.name}"?`
-      )
-    ) {
+    if (window.confirm(`Tem certeza que deseja excluir a campanha "${campaign.name}"?`)) {
       if (!user?.id) {
-        alert(
-          "Erro: Usuário não autenticado. Por favor, faça login novamente."
-        );
+        alert("Erro: Usuário não autenticado. Por favor, faça login novamente.");
         return;
       }
 
       try {
-        await apiClient.delete(
-          API_ENDPOINTS.campaigns.delete(campaign.id,)
-        );
+        await apiClient.delete(API_ENDPOINTS.campaigns.delete(campaign.id));
 
         alert("Campanha excluída com sucesso!");
         onDelete(campaign.id);
@@ -84,8 +59,7 @@ const CampaignCard: React.FC<CampaignCardProps> = ({
         let errorMessage = "Ocorreu um erro na comunicação com o servidor.";
 
         if (error instanceof AxiosError) {
-          errorMessage =
-            error.response?.data?.message || "Erro retornado pelo servidor.";
+          errorMessage = error.response?.data?.message || "Erro retornado pelo servidor.";
         }
 
         alert(`Erro ao excluir campanha: ${errorMessage}`);
@@ -96,26 +70,21 @@ const CampaignCard: React.FC<CampaignCardProps> = ({
   return (
     <div className="card group hover:shadow-glow transition-all duration-300">
       <div className="flex justify-between items-start mb-3">
-        <h3 className="font-display font-bold text-accent truncate">
-          {campaign.name}
-        </h3>
+        <h3 className="font-display font-bold text-accent truncate">{campaign.name}</h3>
         <span
           className={`px-3 py-1.5 inline-flex text-xs leading-5 font-semibold rounded-lg ${getStatusStyle(
             campaign.status
-          )}`}
-        >
-          {campaign.status === "Completed"
+          )}`}>
+          {campaign.status === "Concluída"
             ? "Concluída"
-            : campaign.status === "In Progress"
+            : campaign.status === "Em Andamento"
             ? "Em Andamento"
-            : campaign.status === "Scheduled"
+            : campaign.status === "Agendada"
             ? "Agendada"
             : "Rascunho"}
         </span>
       </div>
-      <p className="text-sm text-accent/60 mb-4 line-clamp-2">
-        {campaign.description}
-      </p>
+      <p className="text-sm text-accent/60 mb-4 line-clamp-2">{campaign.description}</p>
 
       <div className="flex items-center text-sm text-accent/60 mb-4">
         <Calendar size={16} className="mr-1" />
@@ -125,13 +94,12 @@ const CampaignCard: React.FC<CampaignCardProps> = ({
         {campaign.nome_da_instancia && <span className="mx-2">•</span>}
         {campaign.nome_da_instancia && (
           <span>
-            Instância:{" "}
-            <span className="text-primary">{campaign.nome_da_instancia}</span>
+            Instância: <span className="text-primary">{campaign.nome_da_instancia}</span>
           </span>
         )}
       </div>
 
-      {campaign.status === "Completed" || campaign.status === "In Progress" ? (
+      {campaign.status === "Concluída" || campaign.status === "Em Andamento" ? (
         <div className="space-y-3 mb-4">
           <div className="flex flex-wrap gap-4 text-xs text-accent/60">
             <span>
@@ -154,30 +122,27 @@ const CampaignCard: React.FC<CampaignCardProps> = ({
         {/* Botão Ver Detalhes */}
         <button
           className="text-accent/60 text-sm font-medium hover:text-primary transition-colors duration-200 flex items-center"
-          onClick={() => setShowDetails(true)}
-        >
+          onClick={() => setShowDetails(true)}>
           <ArrowUpRight size={16} className="mr-1" />
           Ver Detalhes
         </button>
 
         <div className="flex items-center space-x-2">
           {/* Bloco revertido para a lógica original */}
-          {(campaign.status === "Completed" || campaign.status === "Draft") && (
+          {(campaign.status === "Concluída" || campaign.status === "Rascunho") && (
             <button
               className="text-accent/60 text-sm font-medium hover:text-primary transition-colors duration-200 ml-2"
               onClick={() =>
                 navigate("/campaigns/new", {
                   state: { reuseCampaign: reuseCampaign || campaign },
                 })
-              }
-            >
+              }>
               Reutilizar
             </button>
           )}
 
           <div className="flex items-center border-l border-secondary-dark pl-2 space-x-1">
-            {(campaign.status === "Draft" ||
-              campaign.status === "Scheduled") && (
+            {(campaign.status === "Rascunho" || campaign.status === "Agendada") && (
               <button
                 className="p-2 rounded-md hover:bg-secondary-dark/50 text-accent/60 hover:text-primary transition-colors"
                 title="Editar"
@@ -185,8 +150,7 @@ const CampaignCard: React.FC<CampaignCardProps> = ({
                   navigate("/campaigns/new", {
                     state: { reuseCampaign: reuseCampaign || campaign },
                   })
-                }
-              >
+                }>
                 <Edit size={16} />
               </button>
             )}
@@ -194,19 +158,14 @@ const CampaignCard: React.FC<CampaignCardProps> = ({
             <button
               className="p-2 rounded-md hover:bg-secondary-dark/50 text-red-500/80 hover:text-red-500 transition-colors"
               title="Excluir"
-              onClick={handleDelete}
-            >
+              onClick={handleDelete}>
               <Trash2 size={16} />
             </button>
           </div>
         </div>
       </div>
 
-      <CampaignDetailsModal
-        campaignId={campaign.id}
-        open={showDetails}
-        onClose={() => setShowDetails(false)}
-      />
+      <CampaignDetailsModal campaignId={campaign.id} open={showDetails} onClose={() => setShowDetails(false)} />
     </div>
   );
 };

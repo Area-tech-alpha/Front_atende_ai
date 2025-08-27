@@ -1,12 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  ArrowUpRight,
-  MessageCircle,
-  Users,
-  Clock,
-  RefreshCw,
-  Loader2,
-} from "lucide-react";
+import { ArrowUpRight, MessageCircle, Users, Clock, RefreshCw, Loader2 } from "lucide-react";
 import StatCard from "./components/StatCard";
 import CampaignTable from "./components/CampaignTable";
 import OverviewChart from "./components/OverviewChart";
@@ -91,9 +84,7 @@ const Dashboard = () => {
         {
           title: "Mensagens Enviadas",
           value: stats.totalMessages.toLocaleString(),
-          change: `${
-            stats.messageChange >= 0 ? "+" : ""
-          }${stats.messageChange.toFixed(1)}%`,
+          change: `${stats.messageChange >= 0 ? "+" : ""}${stats.messageChange.toFixed(1)}%`,
           isIncrease: stats.messageChange >= 0,
           icon: <MessageCircle className="text-primary" size={20} />,
           iconBg: "bg-primary/10",
@@ -101,9 +92,7 @@ const Dashboard = () => {
         {
           title: "Contatos Totais",
           value: stats.totalContacts.toLocaleString(),
-          change: `${
-            stats.contactChange >= 0 ? "+" : ""
-          }${stats.contactChange.toFixed(1)}%`,
+          change: `${stats.contactChange >= 0 ? "+" : ""}${stats.contactChange.toFixed(1)}%`,
           isIncrease: stats.contactChange >= 0,
           icon: <Users className="text-primary" size={20} />,
           iconBg: "bg-primary/10",
@@ -111,9 +100,7 @@ const Dashboard = () => {
         {
           title: "Taxa de Entrega",
           value: `${stats.deliveryRate.toFixed(1)}%`,
-          change: `${
-            stats.deliveryChange >= 0 ? "+" : ""
-          }${stats.deliveryChange.toFixed(1)}%`,
+          change: `${stats.deliveryChange >= 0 ? "+" : ""}${stats.deliveryChange.toFixed(1)}%`,
           isIncrease: stats.deliveryChange >= 0,
           icon: <ArrowUpRight className="text-primary" size={20} />,
           iconBg: "bg-primary/10",
@@ -121,9 +108,7 @@ const Dashboard = () => {
         {
           title: "Intervalo Médio",
           value: `${stats.avgResponseTime.toFixed(1)} min`,
-          change: `${
-            stats.responseChange >= 0 ? "+" : ""
-          }${stats.responseChange.toFixed(1)}%`,
+          change: `${stats.responseChange >= 0 ? "+" : ""}${stats.responseChange.toFixed(1)}%`,
           isIncrease: stats.responseChange < 0,
           icon: <Clock className="text-primary" size={20} />,
           iconBg: "bg-primary/10",
@@ -144,11 +129,7 @@ const Dashboard = () => {
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-accent">Painel de Controle</h1>
         <div className="flex items-center space-x-4">
-          <select
-            value={selectedCampaign || ""}
-            onChange={handleCampaignChange}
-            className="input w-full md:w-auto"
-          >
+          <select value={selectedCampaign || ""} onChange={handleCampaignChange} className="input w-full md:w-auto">
             <option value="">Todas as Campanhas</option>
             {allCampaigns.map((campaign) => (
               <option key={campaign.id} value={campaign.id}>
@@ -156,10 +137,7 @@ const Dashboard = () => {
               </option>
             ))}
           </select>
-          <button
-            onClick={() => fetchDashboardData()}
-            className="btn-secondary flex items-center space-x-2"
-          >
+          <button onClick={() => fetchDashboardData()} className="btn-secondary flex items-center space-x-2">
             <RefreshCw size={16} />
             <span>Atualizar</span>
           </button>
@@ -174,50 +152,36 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 card">
-          <h2 className="text-xl font-bold text-accent mb-6">
-            Atividade de Mensagens
-          </h2>
+          <h2 className="text-xl font-bold text-accent mb-6">Atividade de Mensagens</h2>
           <OverviewChart campaignId={selectedCampaign} />
         </div>
         <div className="card p-6 rounded-lg border border-border">
-          <h2 className="text-xl font-bold text-accent mb-6">
-            Status das Campanhas
-          </h2>
+          <h2 className="text-xl font-bold text-accent mb-6">Status das Campanhas</h2>
           <div className="space-y-5">
-            {["Concluída", "Em Andamento", "Agendada", "Rascunho"].map(
-              (status) => {
-                const count = recentCampaigns.filter(
-                  (c) => c.status === status
-                ).length;
-                const percentage =
-                  recentCampaigns.length > 0
-                    ? (count / recentCampaigns.length) * 100
-                    : 0;
+            {["Concluída", "Em Andamento", "Agendada", "Rascunho"].map((status) => {
+              const count = recentCampaigns.filter((c) => c.status === status).length;
+              const percentage = recentCampaigns.length > 0 ? (count / recentCampaigns.length) * 100 : 0;
 
-                return (
-                  <div key={status}>
-                    <div className="flex justify-between text-sm mb-1 text-text-secondary">
-                      <span>{status}</span>
-                      <span>{count}</span>
-                    </div>
-                    <div className="w-full bg-secondary-darker rounded-full h-2">
-                      <div
-                        className="bg-primary h-2 rounded-full transition-all duration-500"
-                        style={{ width: `${percentage}%` }}
-                      ></div>
-                    </div>
+              return (
+                <div key={status}>
+                  <div className="flex justify-between text-sm mb-1 text-text-secondary">
+                    <span>{status}</span>
+                    <span>{count}</span>
                   </div>
-                );
-              }
-            )}
+                  <div className="w-full bg-secondary-darker rounded-full h-2">
+                    <div
+                      className="bg-primary h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${percentage}%` }}></div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
 
       <div className="card p-6 rounded-lg border border-border">
-        <h2 className="text-xl font-bold text-accent mb-6">
-          Campanhas Recentes
-        </h2>
+        <h2 className="text-xl font-bold text-accent mb-6">Campanhas Recentes</h2>
         <CampaignTable campaigns={recentCampaigns} />
       </div>
     </div>
