@@ -105,13 +105,13 @@ const Login = () => {
               )}
             </button>
           </form>
-
+{/* 
           <div className="mt-8 text-center text-sm">
             <span className="text-accent/60">Não tem uma conta? </span>
             <Link to="/signup" className="text-primary hover:text-primary-dark transition-colors duration-200">
               Entre em contato
             </Link>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>
