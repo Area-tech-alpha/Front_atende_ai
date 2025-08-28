@@ -17,10 +17,7 @@ interface CampaignDetailsModalProps {
   onClose: () => void;
 }
 
-const statusMap: Record<
-  string,
-  { color: string; icon: React.ReactNode; label: string }
-> = {
+const statusMap: Record<string, { color: string; icon: React.ReactNode; label: string }> = {
   success: {
     color: "text-green-500",
     icon: <CheckCircle className="w-4 h-4 mr-1" />,
@@ -38,11 +35,7 @@ const statusMap: Record<
   },
 };
 
-const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({
-  campaignId,
-  open,
-  onClose,
-}) => {
+const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({ campaignId, open, onClose }) => {
   const [envios, setEnvios] = useState<Envio[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -50,9 +43,7 @@ const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({
     if (!campaignId) return;
     setLoading(true);
     try {
-      const response = await apiClient.get(
-        API_ENDPOINTS.campaigns.sends(campaignId)
-      );
+      const response = await apiClient.get(API_ENDPOINTS.campaigns.sends(campaignId));
       setEnvios(response.data);
     } catch (error) {
       console.error("Erro ao buscar detalhes dos envios:", error);
@@ -80,8 +71,7 @@ const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({
           <button
             className="text-accent/60 hover:text-primary transition-colors duration-200 p-2 rounded-full hover:bg-primary/10"
             onClick={onClose}
-            title="Fechar"
-          >
+            title="Fechar">
             <X size={22} />
           </button>
         </div>
@@ -91,23 +81,15 @@ const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({
               <Loader2 className="w-8 h-8 text-primary animate-spin" />
             </div>
           ) : envios.length === 0 ? (
-            <div className="text-accent/60 text-center py-8">
-              Nenhum envio encontrado para esta campanha.
-            </div>
+            <div className="text-accent/60 text-center py-8">Nenhum envio encontrado para esta campanha.</div>
           ) : (
             <div className="overflow-x-auto max-h-[400px]">
               <table className="min-w-full text-sm rounded-xl overflow-hidden">
                 <thead>
                   <tr className="bg-primary/5 text-accent/60 uppercase text-xs">
-                    <th className="py-3 px-4 text-left font-semibold">
-                      Contato
-                    </th>
-                    <th className="py-3 px-4 text-left font-semibold">
-                      Status
-                    </th>
-                    <th className="py-3 px-4 text-left font-semibold">
-                      Data de Envio
-                    </th>
+                    <th className="py-3 px-4 text-left font-semibold">Contato</th>
+                    <th className="py-3 px-4 text-left font-semibold">Status</th>
+                    <th className="py-3 px-4 text-left font-semibold">Data de Envio</th>
                     <th className="py-3 px-4 text-left font-semibold">Erro</th>
                   </tr>
                 </thead>
@@ -121,21 +103,16 @@ const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({
                     return (
                       <tr
                         key={envio.id}
-                        className="border-b border-secondary-dark hover:bg-primary/5 transition-colors duration-200"
-                      >
+                        className="border-b border-secondary-dark hover:bg-primary/5 transition-colors duration-200">
                         <td className="py-2 px-4 font-medium text-accent whitespace-nowrap">
-                          {envio.contato || (
-                            <span className="text-accent/40">-</span>
-                          )}
+                          {envio.contato || <span className="text-accent/40">-</span>}
                         </td>
-                        <td
-                          className={`py-2 px-4 flex items-center font-semibold ${status.color}`}
-                        >
+                        <td className={`py-2 px-4 flex items-center font-semibold ${status.color}`}>
                           {status.icon}
                           {status.label}
                         </td>
                         <td className="py-2 px-4 text-accent/80 whitespace-nowrap">
-                          {new Date(envio.data_envio).toLocaleString("pt-BR")}
+                          {new Date(new Date(envio.data_envio).getTime() - 3 * 60 * 60 * 1000).toLocaleString()}
                         </td>
                         <td className="py-2 px-4">
                           {envio.erro ? (
