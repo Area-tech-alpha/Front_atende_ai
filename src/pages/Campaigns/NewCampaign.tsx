@@ -4,6 +4,7 @@ import { X, Loader2, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { API_ENDPOINTS } from "@/config/api";
 import apiClient from "@/lib/api.client";
+import { toast } from "react-toastify";
 
 interface Contact {
   name: string;
@@ -170,8 +171,7 @@ const NewCampaign = () => {
       };
 
       await apiClient.post(API_ENDPOINTS.campaigns.create, campaignPayload);
-
-      alert(
+      toast.success(
         isDraft
           ? "Rascunho salvo com sucesso!"
           : "Campanha criada e agendada com sucesso!"
@@ -182,6 +182,7 @@ const NewCampaign = () => {
       const errorMessage =
         err.response?.data?.message ||
         "Falha ao criar campanha. Tente novamente.";
+      toast.error(`Erro ao criar campanha: ${errorMessage}`);
       setError(errorMessage);
     } finally {
       setIsLoading(false);
