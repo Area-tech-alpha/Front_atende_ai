@@ -12,18 +12,13 @@ import { toast } from "react-toastify";
 
 interface CampaignCardProps {
   campaign: Campaign;
-  reuseCampaign?: any;
   onDelete: (id: number) => void;
 }
 
-const CampaignCard: React.FC<CampaignCardProps> = ({
-  campaign,
-  reuseCampaign,
-  onDelete,
-}) => {
+const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, onDelete }) => {
   const navigate = useNavigate();
   const [showDetails, setShowDetails] = React.useState(false);
-
+  const { user } = useAuth();
   const getStatusStyle = (status: Campaign["status"]) => {
     switch (status) {
       case "Concluída":
@@ -32,7 +27,7 @@ const CampaignCard: React.FC<CampaignCardProps> = ({
         return "bg-yellow-100 text-yellow-700";
       case "Agendada":
         return "bg-blue-100 text-blue-700";
-        case "Imediata":
+      case "Imediata":
         return "bg-blue-100 text-blue-700";
       case "Rascunho":
         return "bg-zinc-200 text-zinc-600";
@@ -49,7 +44,7 @@ const CampaignCard: React.FC<CampaignCardProps> = ({
     };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
-  const { user } = useAuth();
+
   const handleDelete = async () => {
     toast.warn(
       ({ closeToast }) => (
@@ -62,25 +57,21 @@ const CampaignCard: React.FC<CampaignCardProps> = ({
               );
               return;
             }
-
             try {
               await apiClient.delete(
                 API_ENDPOINTS.campaigns.delete(campaign.id)
               );
-
               toast.success("Campanha excluída com sucesso!");
               onDelete(campaign.id);
             } catch (error) {
               console.error("Falha ao excluir campanha:", error);
               let errorMessage =
                 "Ocorreu um erro na comunicação com o servidor.";
-
               if (error instanceof AxiosError) {
                 errorMessage =
                   error.response?.data?.message ||
                   "Erro retornado pelo servidor.";
               }
-
               toast.error(`Erro ao excluir campanha: ${errorMessage}`);
             }
           }}
@@ -114,6 +105,8 @@ const CampaignCard: React.FC<CampaignCardProps> = ({
             ? "Em Andamento"
             : campaign.status === "Agendada"
             ? "Agendada"
+            : campaign.status === "Imediata"
+            ? "Imediata"
             : "Rascunho"}
         </span>
       </div>
@@ -155,7 +148,6 @@ const CampaignCard: React.FC<CampaignCardProps> = ({
       ) : null}
 
       <div className="flex justify-between items-center mt-4 pt-4 border-t border-secondary-dark">
-        {/* Botão Ver Detalhes */}
         <button
           className="text-accent/60 text-sm font-medium hover:text-primary transition-colors duration-200 flex items-center"
           onClick={() => setShowDetails(true)}
@@ -165,14 +157,20 @@ const CampaignCard: React.FC<CampaignCardProps> = ({
         </button>
 
         <div className="flex items-center space-x-2">
-          {/* Bloco revertido para a lógica original */}
           {(campaign.status === "Concluída" ||
-            campaign.status === "Rascunho") && (
+            campaign.status === "Rascunho" ||
+            campaign.status === "Agendada" ||
+            campaign.status === "Em Andamento") && (
             <button
               className="text-accent/60 text-sm font-medium hover:text-primary transition-colors duration-200 ml-2"
               onClick={() =>
                 navigate("/campaigns/new", {
-                  state: { reuseCampaign: reuseCampaign || campaign },
+                  state: {
+                    reuseCampaign: {
+                      ...campaign,
+                      status: "Rascunho",
+                    },
+                  },
                 })
               }
             >
@@ -188,7 +186,12 @@ const CampaignCard: React.FC<CampaignCardProps> = ({
                 title="Editar"
                 onClick={() =>
                   navigate("/campaigns/new", {
-                    state: { reuseCampaign: reuseCampaign || campaign },
+                    state: {
+                      reuseCampaign: {
+                        ...campaign,
+                        status: "Rascunho",
+                      },
+                    },
                   })
                 }
               >
