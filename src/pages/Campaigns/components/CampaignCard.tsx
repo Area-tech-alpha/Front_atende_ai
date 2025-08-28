@@ -23,11 +23,14 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, onDelete }) => {
     switch (status) {
       case "Concluída":
         return "bg-green-100 text-green-700";
+      case "Concluída com erros":
+        return "bg-orange-100 text-orange-700";
+      case "Não concluida":
+        return "bg-red-100 text-red-700";
       case "Em Andamento":
+      case "Imediata":
         return "bg-yellow-100 text-yellow-700";
       case "Agendada":
-        return "bg-blue-100 text-blue-700";
-      case "Imediata":
         return "bg-blue-100 text-blue-700";
       case "Rascunho":
         return "bg-zinc-200 text-zinc-600";
@@ -99,15 +102,24 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, onDelete }) => {
             campaign.status
           )}`}
         >
-          {campaign.status === "Concluída"
-            ? "Concluída"
-            : campaign.status === "Em Andamento"
-            ? "Em Andamento"
-            : campaign.status === "Agendada"
-            ? "Agendada"
-            : campaign.status === "Imediata"
-            ? "Imediata"
-            : "Rascunho"}
+          {(() => {
+            switch (campaign.status) {
+              case "Concluída":
+                return "Concluída";
+              case "Em Andamento":
+                return "Em Andamento";
+              case "Agendada":
+                return "Agendada";
+              case "Imediata":
+                return "Imediata";
+              case "Concluída com erros":
+                return "Concluída c/ erros";
+              case "Não concluida":
+                return "Não concluída";
+              default:
+                return "Rascunho";
+            }
+          })()}
         </span>
       </div>
       <p className="text-sm text-accent/60 mb-4 line-clamp-2">
@@ -128,7 +140,9 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, onDelete }) => {
         )}
       </div>
 
-      {campaign.status === "Concluída" || campaign.status === "Em Andamento" ? (
+      {campaign.status === "Concluída" ||
+      campaign.status === "Em Andamento" ||
+      campaign.status === "Concluída com erros" ? (
         <div className="space-y-3 mb-4">
           <div className="flex flex-wrap gap-4 text-xs text-accent/60">
             <span>
@@ -158,6 +172,7 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, onDelete }) => {
 
         <div className="flex items-center space-x-2">
           {(campaign.status === "Concluída" ||
+            campaign.status === "Concluída com erros" ||
             campaign.status === "Rascunho" ||
             campaign.status === "Agendada" ||
             campaign.status === "Em Andamento") && (
