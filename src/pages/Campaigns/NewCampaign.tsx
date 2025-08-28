@@ -148,6 +148,14 @@ const NewCampaign = () => {
           localDate.getTime() - localDate.getTimezoneOffset() * 60000
         ).toISOString();
       }
+      let campaignStatus;
+      if (isDraft) {
+        campaignStatus = "Rascunho";
+      } else if (isImmediate) {
+        campaignStatus = "Imediata";
+      } else {
+        campaignStatus = "Agendada";
+      }
 
       const campaignPayload = {
         name: campaignName,
@@ -158,11 +166,7 @@ const NewCampaign = () => {
           : scheduledDateTime,
         contatos: selectedContactListId,
         delay: messageDelay,
-        status: isDraft
-          ? "Rascunho"
-          : isImmediate
-          ? "Em Andamento"
-          : "Agendada",
+        status: campaignStatus,
         device_id: selectedDevice,
         nome_da_instancia:
           devices.find((d) => d.deviceId === selectedDevice)?.connection_name ||
@@ -171,6 +175,7 @@ const NewCampaign = () => {
       };
 
       await apiClient.post(API_ENDPOINTS.campaigns.create, campaignPayload);
+
       toast.success(
         isDraft
           ? "Rascunho salvo com sucesso!"
