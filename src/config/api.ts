@@ -34,6 +34,7 @@ export const API_ENDPOINTS = {
   contacts: {
     list: `/api/contacts`,
     create: `/api/contacts`,
+    append: (id: string) => `/api/contacts/${id}/append`,
     update: (id: string) => `/api/contacts/${id}`,
     delete: (id: string) => `/api/contacts/${id}`,
     edit: (id: number) => `api/contacts/${id}`,

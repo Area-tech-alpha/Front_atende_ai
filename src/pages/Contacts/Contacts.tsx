@@ -1,14 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import {
-  Plus,
-  Upload,
-  Download,
-  Search,
-  User,
-  Loader2,
-  X,
-  Edit,
-} from "lucide-react";
+import { Plus, Upload, Download, Search, User, Loader2, X, Edit } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "react-toastify";
 import { API_ENDPOINTS } from "@/config/api";
@@ -32,12 +23,8 @@ const ContactsPage: React.FC = () => {
   const [contactLists, setContactLists] = useState<ContactList[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalType, setModalType] = useState<
-    "add" | "import" | "export" | "edit" | null
-  >(null);
-  const [newContacts, setNewContacts] = useState<Contact[]>([
-    { name: "", phone: "" },
-  ]);
+  const [modalType, setModalType] = useState<"add" | "import" | "export" | "edit" | null>(null);
+  const [newContacts, setNewContacts] = useState<Contact[]>([{ name: "", phone: "" }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -53,9 +40,7 @@ const ContactsPage: React.FC = () => {
       const response = await apiClient.get(API_ENDPOINTS.contacts.list);
       const formattedLists = response.data.map((list: any) => ({
         id: list.id,
-        name:
-          list.name ||
-          `Lista de ${new Date(list.created_at).toLocaleDateString()}`,
+        name: list.name || `Lista de ${new Date(list.created_at).toLocaleDateString()}`,
         contatos: JSON.parse(list.contatos || "[]"),
         created_at: list.created_at,
       }));
@@ -99,17 +84,43 @@ const ContactsPage: React.FC = () => {
       return;
     }
     setIsSubmitting(true);
+
     try {
-      const payload = {
+      // --- ETAPA 1: CRIAR A LISTA VAZIA PARA OBTER O ID ---
+      toast.info(`Criando a lista "${importListName}"...`);
+      const createPayload = {
         name: importListName,
-        contatos: importContacts,
+        contatos: [], // Começa com uma lista vazia
       };
-      await apiClient.post(API_ENDPOINTS.contacts.create, payload);
-      toast.success(`Lista "${importListName}" importada com sucesso!`);
+      const createResponse = await apiClient.post(API_ENDPOINTS.contacts.create, createPayload);
+      const listId = createResponse.data.id;
+
+      if (!listId) {
+        throw new Error("Não foi possível obter o ID da nova lista.");
+      }
+
+      const chunkSize = 500; // Mantém o envio em lotes para evitar o erro "413 Content Too Large"
+      const totalChunks = Math.ceil(importContacts.length / chunkSize);
+
+      for (let i = 0; i < totalChunks; i++) {
+        const chunk = importContacts.slice(i * chunkSize, (i + 1) * chunkSize);
+
+        const appendPayload = {
+          contatos: chunk,
+        };
+
+        toast.info(`Enviando contatos... (Lote ${i + 1} de ${totalChunks})`);
+
+        // Chama o novo endpoint para adicionar o lote à lista existente
+        await apiClient.post(API_ENDPOINTS.contacts.append(listId), appendPayload);
+      }
+
+      toast.success(`Lista "${importListName}" importada com sucesso com ${importContacts.length} contatos!`);
       closeModal();
-      fetchContactLists();
+      fetchContactLists(); // Atualiza a visualização
     } catch (err) {
-      toast.error("Erro ao importar lista.");
+      toast.error("Ocorreu um erro durante a importação. Verifique o console.");
+      console.error("Erro ao importar lista:", err);
     } finally {
       setIsSubmitting(false);
     }
@@ -180,9 +191,7 @@ const ContactsPage: React.FC = () => {
           message="Tem certeza que deseja excluir esta lista?"
           onConfirm={async () => {
             try {
-              await apiClient.delete(
-                API_ENDPOINTS.contacts.delete(String(listId))
-              );
+              await apiClient.delete(API_ENDPOINTS.contacts.delete(String(listId)));
               toast.success("Lista excluída!");
               setContactLists((prev) => prev.filter((l) => l.id !== listId));
             } catch (error) {
@@ -208,18 +217,13 @@ const ContactsPage: React.FC = () => {
       return;
     }
     const csvHeader = "name,phone\n";
-    const csvRows = listToExport.contatos
-      .map((c) => `${c.name},${c.phone}`)
-      .join("\n");
+    const csvRows = listToExport.contatos.map((c) => `${c.name},${c.phone}`).join("\n");
     const csvContent = csvHeader + csvRows;
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute(
-      "download",
-      `${listToExport.name.replace(/\s+/g, "_")}.csv`
-    );
+    link.setAttribute("download", `${listToExport.name.replace(/\s+/g, "_")}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -231,15 +235,11 @@ const ContactsPage: React.FC = () => {
       list.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       list.contatos.some(
         (contact) =>
-          contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          contact.phone.includes(searchQuery)
+          contact.name.toLowerCase().includes(searchQuery.toLowerCase()) || contact.phone.includes(searchQuery)
       )
   );
 
-  const openModal = (
-    type: "add" | "import" | "export" | "edit",
-    list?: ContactList
-  ) => {
+  const openModal = (type: "add" | "import" | "export" | "edit", list?: ContactList) => {
     setModalType(type);
     if (type === "edit" && list) {
       setEditingList(list);
@@ -268,21 +268,13 @@ const ContactsPage: React.FC = () => {
     setNewContacts(list);
   };
 
-  const handleNewContactChange = (
-    index: number,
-    field: keyof Contact,
-    value: string
-  ) => {
+  const handleNewContactChange = (index: number, field: keyof Contact, value: string) => {
     const list = [...newContacts];
     list[index][field] = value;
     setNewContacts(list);
   };
 
-  const handleEditingContactChange = (
-    index: number,
-    field: keyof Contact,
-    value: string
-  ) => {
+  const handleEditingContactChange = (index: number, field: keyof Contact, value: string) => {
     if (!editingList) return;
     const list = [...editingList.contatos];
     list[index][field] = value;
@@ -317,16 +309,10 @@ const ContactsPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-2xl font-bold text-accent">Contatos</h1>
         <div className="flex gap-2">
-          <button
-            onClick={() => openModal("import")}
-            className="btn-secondary flex items-center gap-2"
-          >
+          <button onClick={() => openModal("import")} className="btn-secondary flex items-center gap-2">
             <Upload size={16} /> Importar
           </button>
-          <button
-            onClick={() => openModal("add")}
-            className="btn-primary flex items-center gap-2"
-          >
+          <button onClick={() => openModal("add")} className="btn-primary flex items-center gap-2">
             <Plus size={16} /> Novo Contato
           </button>
         </div>
@@ -334,10 +320,7 @@ const ContactsPage: React.FC = () => {
 
       <div className="card">
         <div className="relative">
-          <Search
-            size={18}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-accent/60"
-          />
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-accent/60" />
           <input
             type="text"
             placeholder="Buscar por nome da lista, nome do contato ou telefone..."
@@ -358,15 +341,13 @@ const ContactsPage: React.FC = () => {
                   <button
                     onClick={() => openModal("edit", list)}
                     className="text-accent/60 hover:text-primary transition-colors"
-                    title="Editar lista"
-                  >
+                    title="Editar lista">
                     <Edit size={16} />
                   </button>
                   <button
                     onClick={() => handleDeleteList(list.id)}
                     className="text-accent/60 hover:text-red-500 transition-colors"
-                    title="Excluir lista"
-                  >
+                    title="Excluir lista">
                     <X size={16} />
                   </button>
                 </div>
@@ -378,9 +359,7 @@ const ContactsPage: React.FC = () => {
                       <User size={16} className="text-primary" />
                     </div>
                     <div>
-                      <p className="text-accent font-medium truncate">
-                        {contact.name}
-                      </p>
+                      <p className="text-accent font-medium truncate">{contact.name}</p>
                       <p className="text-accent/60 truncate">{contact.phone}</p>
                     </div>
                   </div>
@@ -388,17 +367,14 @@ const ContactsPage: React.FC = () => {
               </div>
             </div>
             <div className="mt-4 pt-4 border-t border-border text-sm text-accent/60">
-              {list.contatos.length > 3 && (
-                <p>+{list.contatos.length - 3} outros contatos</p>
-              )}
+              {list.contatos.length > 3 && <p>+{list.contatos.length - 3} outros contatos</p>}
               <p>{list.contatos.length} contato(s) no total</p>
               <button
                 onClick={() => {
                   setExportListId(list.id);
                   openModal("export");
                 }}
-                className="btn-secondary mt-2 w-full flex justify-center items-center gap-2"
-              >
+                className="btn-secondary mt-2 w-full flex justify-center items-center gap-2">
                 <Download size={16} /> Exportar Lista
               </button>
             </div>
@@ -409,45 +385,32 @@ const ContactsPage: React.FC = () => {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-accent/75 backdrop-blur-sm">
           <div className="card w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
-            <button
-              onClick={closeModal}
-              className="absolute top-4 right-4 text-accent/60 hover:text-primary"
-            >
+            <button onClick={closeModal} className="absolute top-4 right-4 text-accent/60 hover:text-primary">
               <X size={24} />
             </button>
             {modalType === "add" && (
               <form onSubmit={handleManualAddList} className="space-y-6">
-                <h2 className="text-xl font-bold text-accent">
-                  Adicionar Contatos
-                </h2>
+                <h2 className="text-xl font-bold text-accent">Adicionar Contatos</h2>
                 {newContacts.map((contact, index) => (
                   <div key={index} className="flex items-center gap-4">
                     <div className="flex-1 space-y-2">
-                      <label className="block text-sm font-medium text-accent/60 mb-1">
-                        Nome
-                      </label>
+                      <label className="block text-sm font-medium text-accent/60 mb-1">Nome</label>
                       <input
                         type="text"
                         className="input"
                         value={contact.name}
-                        onChange={(e) =>
-                          handleNewContactChange(index, "name", e.target.value)
-                        }
+                        onChange={(e) => handleNewContactChange(index, "name", e.target.value)}
                         placeholder="Nome do Contato"
                         required
                       />
                     </div>
                     <div className="flex-1 space-y-2">
-                      <label className="block text-sm font-medium text-accent/60 mb-1">
-                        Telefone
-                      </label>
+                      <label className="block text-sm font-medium text-accent/60 mb-1">Telefone</label>
                       <input
                         type="tel"
                         className="input"
                         value={contact.phone}
-                        onChange={(e) =>
-                          handleNewContactChange(index, "phone", e.target.value)
-                        }
+                        onChange={(e) => handleNewContactChange(index, "phone", e.target.value)}
                         placeholder="Ex: 5511988887777"
                         required
                       />
@@ -456,8 +419,7 @@ const ContactsPage: React.FC = () => {
                       type="button"
                       onClick={() => handleRemoveContactField(index)}
                       className="text-red-500 hover:text-red-700 transition-colors"
-                      title="Remover contato"
-                    >
+                      title="Remover contato">
                       <X size={16} />
                     </button>
                   </div>
@@ -465,87 +427,52 @@ const ContactsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleAddContactField}
-                  className="btn-secondary w-full flex items-center justify-center gap-2"
-                >
+                  className="btn-secondary w-full flex items-center justify-center gap-2">
                   <Plus size={16} /> Adicionar outro contato
                 </button>
                 <div className="flex justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={closeModal}
-                    className="btn-secondary"
-                  >
+                  <button type="button" onClick={closeModal} className="btn-secondary">
                     Cancelar
                   </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="btn-primary"
-                  >
-                    {isSubmitting ? (
-                      <Loader2 className="animate-spin" />
-                    ) : (
-                      "Criar Lista"
-                    )}
+                  <button type="submit" disabled={isSubmitting} className="btn-primary">
+                    {isSubmitting ? <Loader2 className="animate-spin" /> : "Criar Lista"}
                   </button>
                 </div>
               </form>
             )}
             {modalType === "edit" && editingList && (
               <form onSubmit={handleEditList} className="space-y-6">
-                <h2 className="text-xl font-bold text-accent">
-                  Editar Lista: {editingList.name}
-                </h2>
+                <h2 className="text-xl font-bold text-accent">Editar Lista: {editingList.name}</h2>
                 <div className="flex-1 space-y-2">
-                  <label className="block text-sm font-medium text-accent/60 mb-1">
-                    Nome da Lista
-                  </label>
+                  <label className="block text-sm font-medium text-accent/60 mb-1">Nome da Lista</label>
                   <input
                     type="text"
                     className="input"
                     value={editingList.name}
-                    onChange={(e) =>
-                      setEditingList({ ...editingList, name: e.target.value })
-                    }
+                    onChange={(e) => setEditingList({ ...editingList, name: e.target.value })}
                     required
                   />
                 </div>
                 {editingList.contatos.map((contact, index) => (
                   <div key={index} className="flex items-center gap-4">
                     <div className="flex-1 space-y-2">
-                      <label className="block text-sm font-medium text-accent/60 mb-1">
-                        Nome
-                      </label>
+                      <label className="block text-sm font-medium text-accent/60 mb-1">Nome</label>
                       <input
                         type="text"
                         className="input"
                         value={contact.name}
-                        onChange={(e) =>
-                          handleEditingContactChange(
-                            index,
-                            "name",
-                            e.target.value
-                          )
-                        }
+                        onChange={(e) => handleEditingContactChange(index, "name", e.target.value)}
                         placeholder="Nome do Contato"
                         required
                       />
                     </div>
                     <div className="flex-1 space-y-2">
-                      <label className="block text-sm font-medium text-accent/60 mb-1">
-                        Telefone
-                      </label>
+                      <label className="block text-sm font-medium text-accent/60 mb-1">Telefone</label>
                       <input
                         type="tel"
                         className="input"
                         value={contact.phone}
-                        onChange={(e) =>
-                          handleEditingContactChange(
-                            index,
-                            "phone",
-                            e.target.value
-                          )
-                        }
+                        onChange={(e) => handleEditingContactChange(index, "phone", e.target.value)}
                         placeholder="Ex: 5511988887777"
                         required
                       />
@@ -554,8 +481,7 @@ const ContactsPage: React.FC = () => {
                       type="button"
                       onClick={() => handleRemoveEditingContactField(index)}
                       className="text-red-500 hover:text-red-700 transition-colors"
-                      title="Remover contato"
-                    >
+                      title="Remover contato">
                       <X size={16} />
                     </button>
                   </div>
@@ -563,41 +489,24 @@ const ContactsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleAddEditingContactField}
-                  className="btn-secondary w-full flex items-center justify-center gap-2"
-                >
+                  className="btn-secondary w-full flex items-center justify-center gap-2">
                   <Plus size={16} /> Adicionar outro contato
                 </button>
                 <div className="flex justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={closeModal}
-                    className="btn-secondary"
-                  >
+                  <button type="button" onClick={closeModal} className="btn-secondary">
                     Cancelar
                   </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="btn-primary"
-                  >
-                    {isSubmitting ? (
-                      <Loader2 className="animate-spin" />
-                    ) : (
-                      "Salvar Alterações"
-                    )}
+                  <button type="submit" disabled={isSubmitting} className="btn-primary">
+                    {isSubmitting ? <Loader2 className="animate-spin" /> : "Salvar Alterações"}
                   </button>
                 </div>
               </form>
             )}
             {modalType === "import" && (
               <div className="space-y-6">
-                <h2 className="text-xl font-bold text-accent">
-                  Importar Lista de Contatos
-                </h2>
+                <h2 className="text-xl font-bold text-accent">Importar Lista de Contatos</h2>
                 <div>
-                  <label className="block text-sm font-medium text-accent/60 mb-1">
-                    Nome da Nova Lista
-                  </label>
+                  <label className="block text-sm font-medium text-accent/60 mb-1">Nome da Nova Lista</label>
                   <input
                     type="text"
                     className="input"
@@ -607,57 +516,34 @@ const ContactsPage: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-accent/60 mb-1">
-                    Arquivo CSV
-                  </label>
+                  <label className="block text-sm font-medium text-accent/60 mb-1">Arquivo CSV</label>
                   <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-                    <input
-                      type="file"
-                      accept=".csv"
-                      onChange={handleCSVUpload}
-                      ref={fileInputRef}
-                      className="hidden"
-                    />
+                    <input type="file" accept=".csv" onChange={handleCSVUpload} ref={fileInputRef} className="hidden" />
                     <Upload className="h-10 w-10 text-accent/60 mx-auto mb-2" />
                     <p className="text-sm text-accent/60">
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="font-semibold text-primary hover:underline"
-                      >
+                        className="font-semibold text-primary hover:underline">
                         Clique para enviar
                       </button>
                     </p>
-                    {csvFileName && (
-                      <p className="text-xs text-green-500 mt-2">
-                        Arquivo: {csvFileName}
-                      </p>
-                    )}
+                    {csvFileName && <p className="text-xs text-green-500 mt-2">Arquivo: {csvFileName}</p>}
                   </div>
                 </div>
                 <div className="flex justify-end gap-3">
                   <button onClick={closeModal} className="btn-secondary">
                     Cancelar
                   </button>
-                  <button
-                    onClick={handleSaveImportedList}
-                    disabled={isSubmitting}
-                    className="btn-primary"
-                  >
-                    {isSubmitting ? (
-                      <Loader2 className="animate-spin" />
-                    ) : (
-                      "Importar Lista"
-                    )}
+                  <button onClick={handleSaveImportedList} disabled={isSubmitting} className="btn-primary">
+                    {isSubmitting ? <Loader2 className="animate-spin" /> : "Importar Lista"}
                   </button>
                 </div>
               </div>
             )}{" "}
             {modalType === "export" && (
               <div className="space-y-6">
-                <h2 className="text-xl font-bold text-accent">
-                  Exportar Lista de Contatos
-                </h2>
+                <h2 className="text-xl font-bold text-accent">Exportar Lista de Contatos</h2>
                 <div>
                   <label className="block text-sm font-medium text-accent/60 mb-1">
                     Selecione a Lista para Exportar
@@ -665,8 +551,7 @@ const ContactsPage: React.FC = () => {
                   <select
                     className="input"
                     value={exportListId || ""}
-                    onChange={(e) => setExportListId(Number(e.target.value))}
-                  >
+                    onChange={(e) => setExportListId(Number(e.target.value))}>
                     <option value="" disabled>
                       -- Escolha uma lista --
                     </option>
@@ -681,11 +566,7 @@ const ContactsPage: React.FC = () => {
                   <button onClick={closeModal} className="btn-secondary">
                     Cancelar
                   </button>
-                  <button
-                    onClick={handleExportList}
-                    disabled={!exportListId}
-                    className="btn-primary"
-                  >
+                  <button onClick={handleExportList} disabled={!exportListId} className="btn-primary">
                     Exportar
                   </button>
                 </div>
