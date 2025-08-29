@@ -158,7 +158,7 @@ const Dashboard = () => {
         <div className="card p-6 rounded-lg border border-border">
           <h2 className="text-xl font-bold text-accent mb-6">Status das Campanhas</h2>
           <div className="space-y-5">
-            {["Concluída", "Em Andamento", "Agendada", "Rascunho"].map((status) => {
+            {["Concluída", "Em Andamento", "Agendada", "Rascunho", "Concluída com erros"].map((status) => {
               const count = recentCampaigns.filter((c) => c.status === status).length;
               const percentage = recentCampaigns.length > 0 ? (count / recentCampaigns.length) * 100 : 0;
 

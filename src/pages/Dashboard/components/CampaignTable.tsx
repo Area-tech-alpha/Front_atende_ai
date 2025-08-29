@@ -94,7 +94,7 @@ const CampaignTable: React.FC<CampaignTableProps> = ({ campaigns }) => {
                         className="bg-gradient-to-r from-primary to-primary-dark h-2 rounded-full transition-all duration-500"
                         style={{ width: `${campaign.deliveryRate}%` }}></div>
                     </div>
-                    <span className="text-sm text-accent/60">{campaign.deliveryRate}%</span>
+                    <span className="text-sm text-accent/60">{campaign.deliveryRate.toFixed(2)}%</span>
                   </div>
                 )}
               </td>
