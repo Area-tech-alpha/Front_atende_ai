@@ -142,28 +142,40 @@ const NewCampaign = () => {
       }
 
       let scheduledDateTime = null;
-      if (!isImmediate && scheduledDate && scheduledTime) {
-        const localDate = new Date(`${scheduledDate}T${scheduledTime}:00`);
-        scheduledDateTime = new Date(
-          localDate.getTime() - localDate.getTimezoneOffset() * 60000
-        ).toISOString();
-      }
-      let campaignStatus;
+      // Define a data de envio com base na escolha do usuário
       if (isDraft) {
-        campaignStatus = "Rascunho";
+        // Rascunhos podem ou não ter data, mas não serão processados
+        scheduledDateTime = null;
       } else if (isImmediate) {
-        campaignStatus = "Imediata";
-      } else {
-        campaignStatus = "Agendada";
+        // Envio imediato usa a data atual
+        scheduledDateTime = new Date().toISOString();
+      } else if (scheduledDate && scheduledTime) {
+        // --- CORREÇÃO DE FUSO HORÁRIO APLICADA AQUI ---
+        // Cria a data a partir das partes numéricas para forçar a interpretação no fuso horário local do navegador.
+        const dateParts = scheduledDate.split('-'); // Ex: ["2025", "09", "02"]
+        const timeParts = scheduledTime.split(':'); // Ex: ["18", "00"]
+
+        const year = parseInt(dateParts[0]);
+        const month = parseInt(dateParts[1]) - 1; // Meses em JS são de 0 a 11
+        const day = parseInt(dateParts[2]);
+        const hours = parseInt(timeParts[0]);
+        const minutes = parseInt(timeParts[1]);
+        
+        const localDate = new Date(year, month, day, hours, minutes);
+        
+        // Converte a data local para a string UTC correta, que será salva no banco
+        scheduledDateTime = localDate.toISOString();
       }
+
+      const campaignStatus = isDraft
+        ? "Rascunho"
+        : (isImmediate || scheduledDateTime) ? "Agendada" : "Rascunho";
 
       const campaignPayload = {
         name: campaignName,
         texto: message,
         imagem: imageUrl || null,
-        data_de_envio: isImmediate
-          ? new Date().toISOString()
-          : scheduledDateTime,
+        data_de_envio: scheduledDateTime,
         contatos: selectedContactListId,
         delay: messageDelay,
         status: campaignStatus,
