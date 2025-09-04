@@ -7,7 +7,15 @@ import apiClient from "@/lib/api.client";
 import { API_ENDPOINTS } from "@/config/api";
 import { toast } from "react-toastify";
 
-type CampaignStatus = "Concluída" | "Em Andamento" | "Agendada" | "Rascunho" | "Não concluida" | "Concluída com erros" | "Imediata";
+type CampaignStatus =
+  | "Concluída"
+  | "Em Andamento"
+  | "Agendada"
+  | "Rascunho"
+  | "Não concluida"
+  | "Concluída com erros"
+  | "Imediata"
+  | "Cancelada";
 
 export interface Campaign {
   id: number;
