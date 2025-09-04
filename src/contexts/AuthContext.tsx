@@ -1,6 +1,6 @@
 import { API_ENDPOINTS } from "@/config/api";
 import apiClient from "@/lib/api.client";
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useState, useEffect, ReactNode } from "react";
 
 interface User {
   id: string;
@@ -71,6 +71,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem("token");
 
     delete apiClient.defaults.headers.common["Authorization"];
+
+    window.location.href = "/login";
   };
 
   const value = {
@@ -82,12 +84,4 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return <AuthContext.Provider value={value}>{!isLoading && children}</AuthContext.Provider>;
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth deve ser usado dentro de um AuthProvider");
-  }
-  return context;
 };

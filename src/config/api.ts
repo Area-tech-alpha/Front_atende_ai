@@ -30,6 +30,7 @@ export const API_ENDPOINTS = {
     create: `/api/campaigns`,
     update: (id: number) => `/api/campaigns/${id}`,
     delete: (id: number) => `/api/campaigns/${id}`,
+    stop: (id: number) => `/api/campaigns/${id}/stop`,
   },
   contacts: {
     list: `/api/contacts`,
