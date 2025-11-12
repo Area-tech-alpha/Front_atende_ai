@@ -20,7 +20,15 @@ import Chatbot from './pages/Chatbot';
 import CreateAgent from './pages/CreateAgent';
 
 const ProtectedRouteComponent = ({ children }: { children: React.ReactNode }) => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-secondary text-accent">
+        Carregando sessão...
+      </div>
+    );
+  }
 
   if (!user) {
     return <Navigate to="/login" replace />;
