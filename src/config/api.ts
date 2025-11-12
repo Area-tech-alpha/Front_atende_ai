@@ -1,48 +1,65 @@
 export const API_URL = import.meta.env.VITE_API_URL;
 
-// Adicionado para debug. Você pode remover após a correção.
-console.log('API_URL from .env:', API_URL);
+console.log("API_URL from .env:", API_URL);
 
 export const API_ENDPOINTS = {
+  auth: {
+    login: `/auth/login`,
+    signup: `/auth/register`,
+    logout: `/auth/logout`,
+    me: `/auth/me`,
+  },
+
+  dashboard: {
+    stats: `/api/dashboard/stats`,
+  },
   whatsapp: {
-    connect: `${API_URL}/whatsapp/connect`,
-    keepAlive: `${API_URL}/baileys/keep-alive`,
-    devices: `${API_URL}/whatsapp/devices`,
-    status: (deviceId: string) => `${API_URL}/whatsapp/status/${deviceId}`,
-    send: `${API_URL}/whatsapp/send`,
-    qr: (deviceId: string) => `${API_URL}/whatsapp/qr/${deviceId}`,
-    deleteSession: (deviceId: string) => `${API_URL}/whatsapp/session/${deviceId}`,
-    deleteAuth: (deviceId: string) => `${API_URL}/whatsapp/devices/${deviceId}/auth`
+    connect: `/api/whatsapp/connect`,
+    keepAlive: `/api/baileys/keep-alive`,
+    devices: `/api/whatsapp/devices`,
+    status: (deviceId: string) => `/api/whatsapp/status/${deviceId}`,
+    send: `/api/whatsapp/send`,
+    qr: (deviceId: string) => `/api/whatsapp/qr/${deviceId}`,
+    deleteSession: (deviceId: string) => `/api/whatsapp/session/${deviceId}`,
+    deleteAuth: (deviceId: string) => `/api/whatsapp/devices/${deviceId}/auth`,
   },
   campaigns: {
-    list: `${API_URL}/campaigns`,
-    create: `${API_URL}/campaigns`,
-    update: (id: string) => `${API_URL}/campaigns/${id}`,
-    delete: (id: string) => `${API_URL}/campaigns/${id}`
+    list: `/api/campaigns`,
+    withStats: `/api/campaigns/with-stats`,
+    sends: (id: number) => `/api/campaigns/${id}/sends`,
+    create: `/api/campaigns`,
+    update: (id: number) => `/api/campaigns/${id}`,
+    delete: (id: number) => `/api/campaigns/${id}`,
+    stop: (id: number) => `/api/campaigns/${id}/stop`,
   },
   contacts: {
-    list: `${API_URL}/contacts`,
-    create: `${API_URL}/contacts`,
-    update: (id: string) => `${API_URL}/contacts/${id}`,
-    delete: (id: string) => `${API_URL}/contacts/${id}`
+    list: `/api/contacts`,
+    create: `/api/contacts`,
+    append: (id: string) => `/api/contacts/${id}/append`,
+    update: (id: string) => `/api/contacts/${id}`,
+    delete: (id: string) => `/api/contacts/${id}`,
+    edit: (id: number) => `api/contacts/${id}`,
+  },
+  upload: {
+    image: `/api/upload/image`,
   },
   chatbots: {
-    create: `${API_URL}/chatbots`,
-    list: `${API_URL}/chatbots`,
-    toggle: (phoneNumber: string) => `${API_URL}/chatbots/${phoneNumber}/toggle`,
-    remove: (phoneNumber: string) => `${API_URL}/chatbots/${phoneNumber}`
+    create: `/chatbots`,
+    list: `/chatbots`,
+    toggle: (phoneNumber: string) => `/chatbots/${phoneNumber}/toggle`,
+    remove: (phoneNumber: string) => `/chatbots/${phoneNumber}`,
   },
   mistral: {
-    agents: `${API_URL}/mistral/agents`,
-    createAgent: `${API_URL}/mistral/agents`,
-    models: `${API_URL}/mistral/models`
+    agents: `/mistral/agents`,
+    createAgent: `/mistral/agents`,
+    models: `/mistral/models`,
   },
   debug: {
-    autoCleanup: `${API_URL}/debug/auto-cleanup`,
-    caches: `${API_URL}/debug/caches`
+    autoCleanup: `/debug/auto-cleanup`,
+    caches: `/debug/caches`,
   },
   scheduledMessages: {
-    process: `${API_URL}/processScheduledMessages`
+    process: `/processScheduledMessages`,
   },
-  health: `${API_URL}/health`
+  health: `/health`,
 };

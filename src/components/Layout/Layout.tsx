@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { LayoutDashboard, FileText, Users, Menu, X, LogOut, Bell, ChevronDown, Smartphone, Phone } from 'lucide-react';
+import { useState } from "react";
+import { Outlet, NavLink, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { LayoutDashboard, FileText, Users, Menu, X, LogOut, Bell, ChevronDown, Smartphone, Phone } from "lucide-react";
 
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -10,15 +10,15 @@ const Layout = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
   };
 
   const navItems = [
-    { path: '/', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
-    { path: '/contacts', label: 'Contatos', icon: <Users size={20} /> },
-    { path: '/whatsapp/connections', label: 'Conexões', icon: <Phone size={20} /> },
-    { path: '/baileys', label: 'Conectar WhatsApp', icon: <Smartphone size={20} /> },
-    { path: '/campaigns', label: 'Campanhas', icon: <FileText size={20} /> }
+    { path: "/", label: "Dashboard", icon: <LayoutDashboard size={20} /> },
+    { path: "/contacts", label: "Contatos", icon: <Users size={20} /> },
+    { path: "/whatsapp/connections", label: "Conexões", icon: <Phone size={20} /> },
+    { path: "/baileys", label: "Conectar WhatsApp", icon: <Smartphone size={20} /> },
+    { path: "/campaigns", label: "Campanhas", icon: <FileText size={20} /> },
   ];
 
   const toggleSidebar = () => {
@@ -28,14 +28,14 @@ const Layout = () => {
   return (
     <div className="flex h-screen bg-secondary">
       {/* Sidebar for mobile */}
-      <div className={`fixed inset-0 z-40 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`} onClick={toggleSidebar}>
+      <div className={`fixed inset-0 z-40 lg:hidden ${sidebarOpen ? "block" : "hidden"}`} onClick={toggleSidebar}>
         <div className="fixed inset-0 bg-accent/75 backdrop-blur-sm"></div>
       </div>
 
       {/* Sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 w-72 bg-secondary shadow-soft transform transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:h-screen border-r border-secondary-dark ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}>
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between h-20 px-6 border-b border-secondary-dark">
@@ -54,18 +54,19 @@ const Layout = () => {
           </div>
 
           <nav className="flex-1 py-6 px-4 space-y-2 overflow-y-auto">
-            {navItems.map(item => (
+            {navItems.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}
+                onClick={toggleSidebar}
                 className={({ isActive }) =>
                   `flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300 ${
                     isActive
-                      ? 'bg-primary/10 text-primary shadow-glow'
-                      : 'text-accent hover:bg-primary/5 hover:text-primary'
+                      ? "bg-primary/10 text-primary shadow-glow"
+                      : "text-accent hover:bg-primary/5 hover:text-primary"
                   }`
                 }
-                end={item.path === '/'}>
+                end={item.path === "/"}>
                 <span className="mr-3">{item.icon}</span>
                 {item.label}
               </NavLink>
@@ -104,7 +105,7 @@ const Layout = () => {
                 <div className="relative group">
                   <div className="flex items-center space-x-3 cursor-pointer p-2 rounded-xl hover:bg-primary/5 transition-all duration-300">
                     <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary-dark rounded-xl flex items-center justify-center text-secondary font-medium shadow-glow">
-                      {user?.nome_da_instancia?.[0] || 'U'}
+                      {user?.nome_da_instancia?.[0] || "U"}
                     </div>
                     <div className="hidden md:block">
                       <div className="text-sm font-medium text-accent">{user?.nome_da_instancia}</div>

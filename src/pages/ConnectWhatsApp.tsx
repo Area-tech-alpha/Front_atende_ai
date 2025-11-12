@@ -1,42 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { QRCodeSVG } from 'qrcode.react';
-// Ícones do Lucide para manter a consistência do tema
 import { QrCode, CheckCircle, AlertTriangle, Loader2, X } from 'lucide-react';
+import { API_ENDPOINTS } from '@/config/api';
+import apiClient from '@/lib/api.client';
+
 
 const ConnectWhatsApp: React.FC = () => {
-  const { user } = useAuth();
   const [phoneNumber, setPhoneNumber] = useState('');
   const [qrCode, setQrCode] = useState<string | null>(null);
-  const [connectionStatus, setConnectionStatus] = useState<
-    'Desconectado' | 'Conectando...' | 'Aguardando QR' | 'Conectado'
-  >('Desconectado');
+  const [connectionStatus, setConnectionStatus] = useState<'Desconectado' | 'Conectando...' | 'Aguardando QR' | 'Conectado'>('Desconectado');
   const [openQRDialog, setOpenQRDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [connectionName, setConnectionName] = useState('');
 
-  // Pega a URL da API a partir das variáveis de ambiente para corrigir o erro 404
-  const API_URL = import.meta.env.VITE_API_URL;
-
-  // Função para buscar o QR code do backend de forma insistente
   const pollQrCode = async (deviceId: string) => {
     let attempts = 0;
-    // Tenta por até 30 segundos
     while (attempts < 15) {
       try {
-        const res = await fetch(`${API_URL}/api/whatsapp/qr/${deviceId}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.qr) {
-            setQrCode(data.qr);
-            setOpenQRDialog(true);
-            setConnectionStatus('Aguardando QR');
-            setIsLoading(false); // Para o loading principal
-            return; // Sucesso, sai da função
-          }
+        const res = await apiClient.get(API_ENDPOINTS.whatsapp.qr(deviceId));
+        if (res.data && res.data.qr) {
+          setQrCode(res.data.qr);
+          setOpenQRDialog(true);
+          setConnectionStatus('Aguardando QR');
+          setIsLoading(false);
+          return;
         }
       } catch (e) {
         console.error('Falha ao buscar QR code, tentando novamente...', e);
@@ -44,45 +34,29 @@ const ConnectWhatsApp: React.FC = () => {
       await new Promise(r => setTimeout(r, 2000));
       attempts++;
     }
-    // Se o loop terminar sem sucesso
-    setError('Não foi possível obter o QR Code do servidor. Verifique se o backend está rodando e tente novamente.');
+    setError('Não foi possível obter o QR Code do servidor.');
     setConnectionStatus('Desconectado');
     setIsLoading(false);
   };
 
-  // Inicia o processo de conexão
   const handleConnect = async () => {
     if (!phoneNumber) {
-      toast.error('Por favor, insira um número de telefone no formato 55619... ');
+      toast.error('Por favor, insira um número de telefone no formato 55619...');
       return;
     }
-
     setIsLoading(true);
     setQrCode(null);
     setError(null);
     setConnectionStatus('Conectando...');
-
     try {
-      const response = await fetch(`${API_URL}/api/whatsapp/connect`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user?.id,
-          deviceId: phoneNumber,
-          connectionName: connectionName || `Conexão de ${phoneNumber}`
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Erro desconhecido ao iniciar conexão.');
-      }
-
-      // Inicia a busca pelo QR Code após o comando de conexão ser aceito
+      const payload = {
+        deviceId: phoneNumber,
+        connectionName: connectionName || `Conexão de ${phoneNumber}`
+      };
+      await apiClient.post(API_ENDPOINTS.whatsapp.connect, payload);
       await pollQrCode(phoneNumber);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Falha ao conectar. Verifique o console.';
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.error || 'Falha ao conectar. Verifique o console.';
       setError(errorMessage);
       toast.error(errorMessage);
       setConnectionStatus('Desconectado');
@@ -90,13 +64,11 @@ const ConnectWhatsApp: React.FC = () => {
     }
   };
 
-  // Verifica periodicamente se a conexão foi estabelecida (após o QR ser lido)
-  const checkConnectionStatus = async () => {
+  const checkConnectionStatus = useCallback(async () => {
     if (!phoneNumber) return;
     try {
-      const response = await fetch(`${API_URL}/api/whatsapp/status/${phoneNumber}`);
-      const data = await response.json();
-      if (data.status === 'connected') {
+      const response = await apiClient.get(API_ENDPOINTS.whatsapp.status(phoneNumber));
+      if (response.data.status === 'connected') {
         setConnectionStatus('Conectado');
         setOpenQRDialog(false);
         toast.success('WhatsApp conectado com sucesso!');
@@ -104,15 +76,14 @@ const ConnectWhatsApp: React.FC = () => {
     } catch (err) {
       console.log('Verificação de status falhou, tentando novamente...');
     }
-  };
+  }, [phoneNumber]);
 
-  // Efeito para rodar o checkConnectionStatus em intervalo
   useEffect(() => {
     if (connectionStatus === 'Aguardando QR') {
       const interval = setInterval(checkConnectionStatus, 5000);
       return () => clearInterval(interval);
     }
-  }, [connectionStatus, phoneNumber]);
+  }, [connectionStatus, checkConnectionStatus]);
 
   return (
     <>
@@ -183,7 +154,7 @@ const ConnectWhatsApp: React.FC = () => {
               className="absolute top-4 right-4 text-accent/60  hover:text-text-primary transition-colors">
               <X size={24} />
             </button>
-            <h2 className="text-xl font-bold text-text-primary mb-2">Escaneie para Conectar</h2>
+            <h2 className="text-xl font-bold text-primary mb-2">Escaneie para Conectar</h2>
             <p className="text-accent/60 mb-6 text-center text-sm">
               Abra o WhatsApp no seu celular e conecte um novo aparelho.
             </p>

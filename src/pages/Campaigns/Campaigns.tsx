@@ -1,125 +1,80 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, Filter, ChevronDown, Loader2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
-import CampaignCard from './components/CampaignCard';
-import { useAuth } from '@/hooks/useAuth';
+import { useState, useEffect, useCallback } from "react";
+import { Plus, Search, Filter, ChevronDown, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import CampaignCard from "./components/CampaignCard";
+import { useAuth } from "@/hooks/useAuth";
+import apiClient from "@/lib/api.client";
+import { API_ENDPOINTS } from "@/config/api";
+import { toast } from "react-toastify";
 
-interface Campaign {
+type CampaignStatus =
+  | "Concluída"
+  | "Em Andamento"
+  | "Agendada"
+  | "Rascunho"
+  | "Não concluida"
+  | "Concluída com erros"
+  | "Imediata"
+  | "Cancelada";
+
+export interface Campaign {
   id: number;
   name: string;
+  description: string;
+  status: CampaignStatus;
+  sentCount: number;
+  deliveredCount: number;
+  readCount: number;
+  errorCount: number;
+  date: string;
+  template: string;
+  nome_da_instancia: string;
   texto: string;
   imagem: string | null;
   data_de_envio: string | null;
   contatos: number;
-  status: 'Completed' | 'In Progress' | 'Scheduled' | 'Draft';
-  created_at: string;
-  sentCount?: number;
-  deliveredCount?: number;
-  readCount?: number;
-  errorCount?: number;
-  nome_da_instancia: string;
 }
 
 const Campaigns = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // Use useCallback para garantir que a função fetchCampaigns seja a mesma
-  // entre as renderizações, a menos que 'user' mude.
+  const handleDeleteCampaign = (deletedCampaignId: number) => {
+    setCampaigns((currentCampaigns) => currentCampaigns.filter((campaign) => campaign.id !== deletedCampaignId));
+  };
+
   const fetchCampaigns = useCallback(async () => {
+    setLoading(true);
     try {
       if (!user) return;
 
-      const { data: contactsData, error: contactsError } = await supabase
-        .from('contato_evolution')
-        .select('id')
-        .eq('relacao_login', user.id);
+      const response = await apiClient.get(API_ENDPOINTS.campaigns.withStats);
 
-      if (contactsError) throw contactsError;
-
-      if (!contactsData?.length) {
-        setLoading(false);
-        return;
-      }
-
-      const contactIds = contactsData.map(contact => contact.id);
-
-      const { data: messagesData, error: messagesError } = await supabase
-        .from('mensagem_evolution')
-        .select('*')
-        .in('contatos', contactIds)
-        .order('created_at', { ascending: false });
-
-      if (messagesError) throw messagesError;
-
-      const campaignIds = messagesData.map(msg => msg.id);
-      let envioStats: Record<number, { sent: number; delivered: number; read: number; error: number }> = {};
-      if (campaignIds.length > 0) {
-        const { data: envios } = await supabase
-          .from('envio_evolution')
-          .select('id_mensagem, status')
-          .in('id_mensagem', campaignIds);
-        if (envios) {
-          for (const id of campaignIds) {
-            const enviosCampanha = envios.filter(e => e.id_mensagem === id);
-            envioStats[id] = {
-              sent: enviosCampanha.length,
-              delivered: enviosCampanha.filter(e => e.status === 'success').length,
-              read: enviosCampanha.filter(e => e.status === 'read').length,
-              error: enviosCampanha.filter(e => e.status === 'error').length
-            };
-          }
-        }
-      }
-
-      const determineStatus = (scheduledDate: string | null): Campaign['status'] => {
-        if (!scheduledDate) return 'Completed';
-        const now = new Date();
-        const scheduled = new Date(scheduledDate);
-        if (scheduled > now) return 'Scheduled';
-        if (scheduled <= now) return 'Completed';
-        return 'Draft';
-      };
-
-      const formattedCampaigns = messagesData.map(message => ({
-        id: message.id,
-        name: message.name || `Campaign ${message.id}`,
-        texto: message.texto,
-        imagem: message.imagem,
-        data_de_envio: message.data_de_envio,
-        contatos: message.contatos,
-        status: message.status === 'Draft' ? 'Draft' : determineStatus(message.data_de_envio),
-        created_at: message.created_at,
-        sentCount: envioStats[message.id]?.sent || 0,
-        deliveredCount: envioStats[message.id]?.delivered || 0,
-        readCount: envioStats[message.id]?.read || 0,
-        errorCount: envioStats[message.id]?.error || 0,
-        nome_da_instancia: message.nome_da_instancia
-      }));
-
-      setCampaigns(formattedCampaigns);
+      setCampaigns(response.data);
     } catch (error) {
-      console.error('Error fetching campaigns:', error);
+      console.error("Error fetching campaigns:", error);
+      toast.error("Falha ao carregar as campanhas.");
     } finally {
       setLoading(false);
     }
-  }, [user]); // Adicionando 'user' como dependência para useCallback
+  }, [user]);
 
   useEffect(() => {
-    fetchCampaigns();
-  }, [fetchCampaigns]); // fetchCampaigns adicionado como dependência do useEffect
+    if (user) {
+      fetchCampaigns();
+    }
+  }, [fetchCampaigns, user]);
 
-  // Filter campaigns based on search query and status filter
-  const filteredCampaigns = campaigns.filter(campaign => {
+  const filteredCampaigns = campaigns.filter((campaign) => {
     const matchesSearch =
       campaign.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      campaign.texto.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'All' || campaign.status === statusFilter;
+      campaign.description.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesStatus = statusFilter === "All" || campaign.status === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
@@ -139,7 +94,7 @@ const Campaigns = () => {
           Campanhas
         </h1>
         <button
-          onClick={() => navigate('/campaigns/new')}
+          onClick={() => navigate("/campaigns/new")}
           className="btn-primary flex items-center space-x-2 w-full sm:w-auto justify-center">
           <Plus size={16} />
           <span>Nova Campanha</span>
@@ -157,7 +112,7 @@ const Campaigns = () => {
               placeholder="Buscar campanhas..."
               className="input pl-10"
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
@@ -171,12 +126,15 @@ const Campaigns = () => {
                 <select
                   className="appearance-none bg-transparent pr-8 py-2 w-40 focus:outline-none text-sm text-accent"
                   value={statusFilter}
-                  onChange={e => setStatusFilter(e.target.value)}>
+                  onChange={(e) => setStatusFilter(e.target.value)}>
                   <option value="All">Todos</option>
-                  <option value="Draft">Rascunho</option>
-                  <option value="Scheduled">Agendada</option>
-                  <option value="In Progress">Em Andamento</option>
-                  <option value="Completed">Concluída</option>
+                  <option value="Rascunho">Rascunho</option>
+                  <option value="Agendada">Agendada</option>
+                  <option value="Imediata">Imediata</option>
+                  <option value="Em Andamento">Em Andamento</option>
+                  <option value="Concluída">Concluída</option>
+                  <option value="Não Concluída">Não Concluída</option>
+                  <option value="Concluída com erros">Concluída com erros</option>
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
                   <ChevronDown size={16} className="text-accent/40" />
@@ -189,23 +147,11 @@ const Campaigns = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredCampaigns.length > 0 ? (
-          filteredCampaigns.map(campaign => (
+          filteredCampaigns.map((campaign) => (
             <CampaignCard
               key={campaign.id}
-              campaign={{
-                id: campaign.id,
-                name: campaign.name,
-                description: campaign.texto,
-                status: campaign.status,
-                sentCount: campaign.sentCount ?? 0,
-                deliveredCount: campaign.deliveredCount ?? 0,
-                readCount: campaign.readCount ?? 0,
-                errorCount: campaign.errorCount ?? 0,
-                date: campaign.data_de_envio || campaign.created_at,
-                template: campaign.imagem ? 'Com Imagem' : 'Apenas Texto',
-                nome_da_instancia: campaign.nome_da_instancia
-              }}
-              reuseCampaign={campaign}
+              campaign={campaign} // Passa o objeto inteiro, que já está no formato correto
+              onDelete={handleDeleteCampaign}
             />
           ))
         ) : (
@@ -214,8 +160,8 @@ const Campaigns = () => {
               <Search size={24} className="text-primary" />
             </div>
             <h3 className="text-lg font-display font-bold text-accent mb-2">Nenhuma campanha encontrada</h3>
-            <p className="text-accent/60 mb-6">Tente ajustar sua busca ou critérios de filtro</p>
-            <button onClick={() => navigate('/campaigns/new')} className="btn-primary">
+            <p className="text-accent/60 mb-6">Tente ajustar sua busca ou crie sua primeira campanha.</p>
+            <button onClick={() => navigate("/campaigns/new")} className="btn-primary">
               Criar Nova Campanha
             </button>
           </div>

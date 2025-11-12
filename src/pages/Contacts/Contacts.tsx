@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Upload, Download, Search, User, Loader2, X } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '../../lib/supabase';
-import { toast } from 'react-toastify';
+import React, { useState, useEffect, useRef } from "react";
+import { Plus, Upload, Download, Search, User, Loader2, X, Edit } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "react-toastify";
+import { API_ENDPOINTS } from "@/config/api";
+import apiClient from "@/lib/api.client";
+import ConfirmToast from "@/components/ui/ConfirmToast";
 
-// Interfaces para tipagem dos dados
 interface Contact {
   name: string;
   phone: string;
@@ -18,19 +19,39 @@ interface ContactList {
 }
 
 const ContactsPage: React.FC = () => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [contactLists, setContactLists] = useState<ContactList[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalType, setModalType] = useState<'add' | 'import' | 'export' | null>(null);
-  const [newContact, setNewContact] = useState({ name: '', phone: '' });
+  const [modalType, setModalType] = useState<"add" | "import" | "export" | "edit" | null>(null);
+  const [newContacts, setNewContacts] = useState<Contact[]>([{ name: "", phone: "" }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [importListName, setImportListName] = useState('');
+  const [importListName, setImportListName] = useState("");
   const [importContacts, setImportContacts] = useState<Contact[]>([]);
-  const [csvFileName, setCsvFileName] = useState<string>('');
+  const [csvFileName, setCsvFileName] = useState<string>("");
   const [exportListId, setExportListId] = useState<number | null>(null);
+  const [editingList, setEditingList] = useState<ContactList | null>(null);
+
+  const fetchContactLists = async () => {
+    setLoading(true);
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.contacts.list);
+      const formattedLists = response.data.map((list: any) => ({
+        id: list.id,
+        name: list.name || `Lista de ${new Date(list.created_at).toLocaleDateString()}`,
+        contatos: JSON.parse(list.contatos || "[]"),
+        created_at: list.created_at,
+      }));
+      setContactLists(formattedLists);
+    } catch (error) {
+      toast.error("Erro ao buscar listas de contatos.");
+      console.error("Error fetching contact lists:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -38,42 +59,18 @@ const ContactsPage: React.FC = () => {
     }
   }, [user]);
 
-  const fetchContactLists = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.from('contato_evolution').select('*').eq('relacao_login', user?.id);
-
-      if (error) throw error;
-
-      const formattedLists = data.map(list => ({
-        id: list.id,
-        name: list.name || `Lista de ${new Date(list.created_at).toLocaleDateString()}`,
-        contatos: JSON.parse(list.contatos || '[]'),
-        created_at: list.created_at
-      }));
-
-      setContactLists(formattedLists);
-    } catch (error) {
-      toast.error('Erro ao buscar listas de contatos.');
-      console.error('Error fetching contact lists:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     setCsvFileName(file.name);
     const reader = new FileReader();
-    reader.onload = e => {
+    reader.onload = (e) => {
       const text = e.target?.result as string;
-      const lines = text.split('\n').slice(1); // Pula o cabeçalho
+      const lines = text.split("\n").slice(1);
       const parsedContacts: Contact[] = lines
-        .filter(line => line.trim())
-        .map(line => {
-          const [name, phone] = line.split(',').map(item => item.trim());
+        .filter((line) => line.trim())
+        .map((line) => {
+          const [name, phone] = line.split(",").map((item) => item.trim());
           return { name, phone };
         });
       setImportContacts(parsedContacts);
@@ -82,83 +79,151 @@ const ContactsPage: React.FC = () => {
   };
 
   const handleSaveImportedList = async () => {
-    if (!importListName || importContacts.length === 0 || !user) {
-      toast.warn('Nome da lista e contatos são obrigatórios.');
+    if (!importListName || importContacts.length === 0) {
+      toast.warn("Nome da lista e contatos são obrigatórios.");
       return;
     }
     setIsSubmitting(true);
+
     try {
-      await supabase.from('contato_evolution').insert([
-        {
-          contatos: JSON.stringify(importContacts),
-          relacao_login: user.id,
-          name: importListName
-        }
-      ]);
-      toast.success(`Lista "${importListName}" importada com sucesso!`);
+      // --- ETAPA 1: CRIAR A LISTA VAZIA PARA OBTER O ID ---
+      toast.info(`Criando a lista "${importListName}"...`);
+      const createPayload = {
+        name: importListName,
+        contatos: [], // Começa com uma lista vazia
+      };
+      const createResponse = await apiClient.post(API_ENDPOINTS.contacts.create, createPayload);
+      const listId = createResponse.data.id;
+
+      if (!listId) {
+        throw new Error("Não foi possível obter o ID da nova lista.");
+      }
+
+      const chunkSize = 500; // Mantém o envio em lotes para evitar o erro "413 Content Too Large"
+      const totalChunks = Math.ceil(importContacts.length / chunkSize);
+
+      for (let i = 0; i < totalChunks; i++) {
+        const chunk = importContacts.slice(i * chunkSize, (i + 1) * chunkSize);
+
+        const appendPayload = {
+          contatos: chunk,
+        };
+
+        toast.info(`Enviando contatos... (Lote ${i + 1} de ${totalChunks})`);
+
+        // Chama o novo endpoint para adicionar o lote à lista existente
+        await apiClient.post(API_ENDPOINTS.contacts.append(listId), appendPayload);
+      }
+
+      toast.success(`Lista "${importListName}" importada com sucesso com ${importContacts.length} contatos!`);
       closeModal();
-      fetchContactLists();
+      fetchContactLists(); // Atualiza a visualização
     } catch (err) {
-      toast.error('Erro ao importar lista.');
+      toast.error("Ocorreu um erro durante a importação. Verifique o console.");
+      console.error("Erro ao importar lista:", err);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleAddContact = async (e: React.FormEvent) => {
+  const handleManualAddList = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newContact.name || !newContact.phone || !user) {
-      toast.warn('Nome e telefone são obrigatórios.');
+    const listName = prompt("Qual o nome desta nova lista de contatos?");
+    if (!listName) {
+      toast.error("O nome da lista é obrigatório para salvar.");
       return;
     }
+
+    const validContacts = newContacts.filter((c) => c.name && c.phone);
+    if (validContacts.length === 0) {
+      toast.warn("Adicione pelo menos um contato válido.");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      await supabase.from('contato_evolution').insert([
-        {
-          contatos: JSON.stringify([newContact]),
-          relacao_login: user.id,
-          name: `Contato: ${newContact.name}`
-        }
-      ]);
-      toast.success('Contato adicionado com sucesso!');
+      const payload = {
+        name: listName,
+        contatos: validContacts,
+      };
+      await apiClient.post(API_ENDPOINTS.contacts.create, payload);
+      toast.success("Lista de contatos criada com sucesso!");
       closeModal();
       fetchContactLists();
     } catch (err) {
-      toast.error('Erro ao adicionar contato.');
+      toast.error("Erro ao criar lista de contatos.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEditList = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingList) return;
+
+    const validContacts = editingList.contatos.filter((c) => c.name && c.phone);
+    if (validContacts.length === 0) {
+      toast.warn("Adicione pelo menos um contato válido.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        name: editingList.name,
+        contatos: validContacts,
+      };
+      await apiClient.put(API_ENDPOINTS.contacts.edit(editingList.id), payload);
+      toast.success("Lista de contatos atualizada com sucesso!");
+      closeModal();
+      fetchContactLists();
+    } catch (err) {
+      toast.error("Erro ao atualizar lista de contatos.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDeleteList = async (listId: number) => {
-    if (window.confirm('Tem certeza que deseja excluir esta lista?')) {
-      try {
-        await supabase.from('contato_evolution').delete().eq('id', listId);
-        toast.success('Lista excluída!');
-        setContactLists(prev => prev.filter(l => l.id !== listId));
-      } catch (error) {
-        toast.error('Erro ao excluir lista.');
+    toast.warn(
+      ({ closeToast }) => (
+        <ConfirmToast
+          message="Tem certeza que deseja excluir esta lista?"
+          onConfirm={async () => {
+            try {
+              await apiClient.delete(API_ENDPOINTS.contacts.delete(String(listId)));
+              toast.success("Lista excluída!");
+              setContactLists((prev) => prev.filter((l) => l.id !== listId));
+            } catch (error) {
+              toast.error("Erro ao excluir lista.");
+            }
+          }}
+          onCancel={() => {}}
+          closeToast={closeToast}
+        />
+      ),
+      {
+        autoClose: false,
+        closeOnClick: false,
       }
-    }
+    );
   };
 
   const handleExportList = () => {
     if (!exportListId) return;
-    const listToExport = contactLists.find(l => l.id === exportListId);
+    const listToExport = contactLists.find((l) => l.id === exportListId);
     if (!listToExport) {
-      toast.error('Lista não encontrada.');
+      toast.error("Lista não encontrada.");
       return;
     }
-
-    const csvHeader = 'name,phone\n';
-    const csvRows = listToExport.contatos.map(c => `${c.name},${c.phone}`).join('\n');
+    const csvHeader = "name,phone\n";
+    const csvRows = listToExport.contatos.map((c) => `${c.name},${c.phone}`).join("\n");
     const csvContent = csvHeader + csvRows;
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `${listToExport.name.replace(/\s+/g, '_')}.csv`);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${listToExport.name.replace(/\s+/g, "_")}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -166,27 +231,69 @@ const ContactsPage: React.FC = () => {
   };
 
   const filteredLists = contactLists.filter(
-    list =>
+    (list) =>
       list.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       list.contatos.some(
-        contact => contact.name.toLowerCase().includes(searchQuery.toLowerCase()) || contact.phone.includes(searchQuery)
+        (contact) =>
+          contact.name.toLowerCase().includes(searchQuery.toLowerCase()) || contact.phone.includes(searchQuery)
       )
   );
 
-  const openModal = (type: 'add' | 'import' | 'export') => {
+  const openModal = (type: "add" | "import" | "export" | "edit", list?: ContactList) => {
     setModalType(type);
+    if (type === "edit" && list) {
+      setEditingList(list);
+    }
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setModalType(null);
-    // Limpa estados dos modais
-    setNewContact({ name: '', phone: '' });
+    setNewContacts([{ name: "", phone: "" }]);
     setImportContacts([]);
-    setImportListName('');
-    setCsvFileName('');
+    setImportListName("");
+    setCsvFileName("");
     setExportListId(null);
+    setEditingList(null);
+  };
+
+  const handleAddContactField = () => {
+    setNewContacts([...newContacts, { name: "", phone: "" }]);
+  };
+
+  const handleRemoveContactField = (index: number) => {
+    const list = [...newContacts];
+    list.splice(index, 1);
+    setNewContacts(list);
+  };
+
+  const handleNewContactChange = (index: number, field: keyof Contact, value: string) => {
+    const list = [...newContacts];
+    list[index][field] = value;
+    setNewContacts(list);
+  };
+
+  const handleEditingContactChange = (index: number, field: keyof Contact, value: string) => {
+    if (!editingList) return;
+    const list = [...editingList.contatos];
+    list[index][field] = value;
+    setEditingList({ ...editingList, contatos: list });
+  };
+
+  const handleAddEditingContactField = () => {
+    if (!editingList) return;
+    setEditingList({
+      ...editingList,
+      contatos: [...editingList.contatos, { name: "", phone: "" }],
+    });
+  };
+
+  const handleRemoveEditingContactField = (index: number) => {
+    if (!editingList) return;
+    const list = [...editingList.contatos];
+    list.splice(index, 1);
+    setEditingList({ ...editingList, contatos: list });
   };
 
   if (loading) {
@@ -202,13 +309,10 @@ const ContactsPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-2xl font-bold text-accent">Contatos</h1>
         <div className="flex gap-2">
-          <button onClick={() => openModal('import')} className="btn-secondary flex items-center gap-2">
+          <button onClick={() => openModal("import")} className="btn-secondary flex items-center gap-2">
             <Upload size={16} /> Importar
           </button>
-          <button onClick={() => openModal('export')} className="btn-secondary flex items-center gap-2">
-            <Download size={16} /> Exportar
-          </button>
-          <button onClick={() => openModal('add')} className="btn-primary flex items-center gap-2">
+          <button onClick={() => openModal("add")} className="btn-primary flex items-center gap-2">
             <Plus size={16} /> Novo Contato
           </button>
         </div>
@@ -222,22 +326,31 @@ const ContactsPage: React.FC = () => {
             placeholder="Buscar por nome da lista, nome do contato ou telefone..."
             className="input pl-10"
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredLists.map(list => (
+        {filteredLists.map((list) => (
           <div key={list.id} className="card flex flex-col justify-between">
             <div>
               <div className="flex justify-between items-start mb-4">
-                <h3 className="font-bold text-accent  pr-2">{list.name}</h3>
-                <button
-                  onClick={() => handleDeleteList(list.id)}
-                  className="text-accent/60 hover:text-red-500 transition-colors">
-                  <X size={16} />
-                </button>
+                <h3 className="font-bold text-accent pr-2">{list.name}</h3>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => openModal("edit", list)}
+                    className="text-accent/60 hover:text-primary transition-colors"
+                    title="Editar lista">
+                    <Edit size={16} />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteList(list.id)}
+                    className="text-accent/60 hover:text-red-500 transition-colors"
+                    title="Excluir lista">
+                    <X size={16} />
+                  </button>
+                </div>
               </div>
               <div className="space-y-2">
                 {list.contatos.slice(0, 3).map((contact, index) => (
@@ -256,6 +369,14 @@ const ContactsPage: React.FC = () => {
             <div className="mt-4 pt-4 border-t border-border text-sm text-accent/60">
               {list.contatos.length > 3 && <p>+{list.contatos.length - 3} outros contatos</p>}
               <p>{list.contatos.length} contato(s) no total</p>
+              <button
+                onClick={() => {
+                  setExportListId(list.id);
+                  openModal("export");
+                }}
+                className="btn-secondary mt-2 w-full flex justify-center items-center gap-2">
+                <Download size={16} /> Exportar Lista
+              </button>
             </div>
           </div>
         ))}
@@ -263,46 +384,125 @@ const ContactsPage: React.FC = () => {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-accent/75 backdrop-blur-sm">
-          <div className="card w-full max-w-lg relative">
+          <div className="card w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
             <button onClick={closeModal} className="absolute top-4 right-4 text-accent/60 hover:text-primary">
               <X size={24} />
             </button>
-
-            {modalType === 'add' && (
-              <form onSubmit={handleAddContact} className="space-y-6">
-                <h2 className="text-xl font-bold text-accent">Novo Contato</h2>
-                <div>
-                  <label className="block text-sm font-medium text-accent/60 mb-1">Nome</label>
-                  <input
-                    type="text"
-                    className="input"
-                    value={newContact.name}
-                    onChange={e => setNewContact({ ...newContact, name: e.target.value })}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-accent/60 mb-1">Telefone</label>
-                  <input
-                    type="tel"
-                    className="input"
-                    value={newContact.phone}
-                    onChange={e => setNewContact({ ...newContact, phone: e.target.value })}
-                    required
-                  />
-                </div>
+            {modalType === "add" && (
+              <form onSubmit={handleManualAddList} className="space-y-6">
+                <h2 className="text-xl font-bold text-accent">Adicionar Contatos</h2>
+                {newContacts.map((contact, index) => (
+                  <div key={index} className="flex items-center gap-4">
+                    <div className="flex-1 space-y-2">
+                      <label className="block text-sm font-medium text-accent/60 mb-1">Nome</label>
+                      <input
+                        type="text"
+                        className="input"
+                        value={contact.name}
+                        onChange={(e) => handleNewContactChange(index, "name", e.target.value)}
+                        placeholder="Nome do Contato"
+                        required
+                      />
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <label className="block text-sm font-medium text-accent/60 mb-1">Telefone</label>
+                      <input
+                        type="tel"
+                        className="input"
+                        value={contact.phone}
+                        onChange={(e) => handleNewContactChange(index, "phone", e.target.value)}
+                        placeholder="Ex: 5511988887777"
+                        required
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveContactField(index)}
+                      className="text-red-500 hover:text-red-700 transition-colors"
+                      title="Remover contato">
+                      <X size={16} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={handleAddContactField}
+                  className="btn-secondary w-full flex items-center justify-center gap-2">
+                  <Plus size={16} /> Adicionar outro contato
+                </button>
                 <div className="flex justify-end gap-3">
                   <button type="button" onClick={closeModal} className="btn-secondary">
                     Cancelar
                   </button>
                   <button type="submit" disabled={isSubmitting} className="btn-primary">
-                    {isSubmitting ? <Loader2 className="animate-spin" /> : 'Adicionar'}
+                    {isSubmitting ? <Loader2 className="animate-spin" /> : "Criar Lista"}
                   </button>
                 </div>
               </form>
             )}
-
-            {modalType === 'import' && (
+            {modalType === "edit" && editingList && (
+              <form onSubmit={handleEditList} className="space-y-6">
+                <h2 className="text-xl font-bold text-accent">Editar Lista: {editingList.name}</h2>
+                <div className="flex-1 space-y-2">
+                  <label className="block text-sm font-medium text-accent/60 mb-1">Nome da Lista</label>
+                  <input
+                    type="text"
+                    className="input"
+                    value={editingList.name}
+                    onChange={(e) => setEditingList({ ...editingList, name: e.target.value })}
+                    required
+                  />
+                </div>
+                {editingList.contatos.map((contact, index) => (
+                  <div key={index} className="flex items-center gap-4">
+                    <div className="flex-1 space-y-2">
+                      <label className="block text-sm font-medium text-accent/60 mb-1">Nome</label>
+                      <input
+                        type="text"
+                        className="input"
+                        value={contact.name}
+                        onChange={(e) => handleEditingContactChange(index, "name", e.target.value)}
+                        placeholder="Nome do Contato"
+                        required
+                      />
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <label className="block text-sm font-medium text-accent/60 mb-1">Telefone</label>
+                      <input
+                        type="tel"
+                        className="input"
+                        value={contact.phone}
+                        onChange={(e) => handleEditingContactChange(index, "phone", e.target.value)}
+                        placeholder="Ex: 5511988887777"
+                        required
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveEditingContactField(index)}
+                      className="text-red-500 hover:text-red-700 transition-colors"
+                      title="Remover contato">
+                      <X size={16} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={handleAddEditingContactField}
+                  className="btn-secondary w-full flex items-center justify-center gap-2">
+                  <Plus size={16} /> Adicionar outro contato
+                </button>
+                <div className="flex justify-end gap-3">
+                  <button type="button" onClick={closeModal} className="btn-secondary">
+                    Cancelar
+                  </button>
+                  <button type="submit" disabled={isSubmitting} className="btn-primary">
+                    {isSubmitting ? <Loader2 className="animate-spin" /> : "Salvar Alterações"}
+                  </button>
+                </div>
+              </form>
+            )}
+            {modalType === "import" && (
               <div className="space-y-6">
                 <h2 className="text-xl font-bold text-accent">Importar Lista de Contatos</h2>
                 <div>
@@ -311,12 +511,12 @@ const ContactsPage: React.FC = () => {
                     type="text"
                     className="input"
                     value={importListName}
-                    onChange={e => setImportListName(e.target.value)}
+                    onChange={(e) => setImportListName(e.target.value)}
                     placeholder="Ex: Clientes VIP"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-accent/60mb-1">Arquivo CSV</label>
+                  <label className="block text-sm font-medium text-accent/60 mb-1">Arquivo CSV</label>
                   <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
                     <input type="file" accept=".csv" onChange={handleCSVUpload} ref={fileInputRef} className="hidden" />
                     <Upload className="h-10 w-10 text-accent/60 mx-auto mb-2" />
@@ -336,13 +536,12 @@ const ContactsPage: React.FC = () => {
                     Cancelar
                   </button>
                   <button onClick={handleSaveImportedList} disabled={isSubmitting} className="btn-primary">
-                    {isSubmitting ? <Loader2 className="animate-spin" /> : 'Importar Lista'}
+                    {isSubmitting ? <Loader2 className="animate-spin" /> : "Importar Lista"}
                   </button>
                 </div>
               </div>
-            )}
-
-            {modalType === 'export' && (
+            )}{" "}
+            {modalType === "export" && (
               <div className="space-y-6">
                 <h2 className="text-xl font-bold text-accent">Exportar Lista de Contatos</h2>
                 <div>
@@ -351,12 +550,12 @@ const ContactsPage: React.FC = () => {
                   </label>
                   <select
                     className="input"
-                    value={exportListId || ''}
-                    onChange={e => setExportListId(Number(e.target.value))}>
+                    value={exportListId || ""}
+                    onChange={(e) => setExportListId(Number(e.target.value))}>
                     <option value="" disabled>
                       -- Escolha uma lista --
                     </option>
-                    {contactLists.map(list => (
+                    {contactLists.map((list) => (
                       <option key={list.id} value={list.id}>
                         {list.name}
                       </option>
